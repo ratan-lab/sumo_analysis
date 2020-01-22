@@ -6,8 +6,8 @@ MKL.ARGS.PATH = "MKL"
 MCR.ROOT = "~/MATLAB/MATLAB_Runtime/v90"
 
 # # SUMO params
-# SUMO.FILES.DIR <- "sumo_files"
-# SUMO.PATH <- "sumo"
+SUMO.FILES.DIR <- "sumo_files"
+SUMO.PATH <- "sumo"
 
 # benchmark params
 DATASETS.PATH = "data"
@@ -15,8 +15,8 @@ RESULTS.DIR.PATH = "results"
 CLINICAL.PARAMS.DIR = "data/clinical"
 MC.CORES <- 3
 
-ALGORITHM.NAMES = c('snf','spectral', 'lracluster', 'pins', 'mcca', 'nemo', 'mkl')
-ALGORITHM.DISPLAY.NAMES = as.list(c('SNF','Spectral', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'rMKL-LPP'))
+ALGORITHM.NAMES = c('snf','spectral', 'lracluster', 'pins', 'mcca', 'nemo', 'mkl', 'sumo')
+ALGORITHM.DISPLAY.NAMES = as.list(c('SNF','Spectral', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'rMKL-LPP', 'SUMO'))
 names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
 
 OMIC.SUBSETS = list('multi_omics')

@@ -39,6 +39,16 @@ get.tables.dir.path <- function() {
   return(tables.dir)
 }
 
+set.omics.list.attr <- function(subtype.raw.data, subtype.data) {
+  attr(subtype.raw.data[[1]], 'is.seq') = subtype.data$is.rna.seq
+  attr(subtype.raw.data[[1]], 'is.met') = F
+  attr(subtype.raw.data[[2]], 'is.seq') = F
+  attr(subtype.raw.data[[2]], 'is.met') = T
+  attr(subtype.raw.data[[3]], 'is.seq') = subtype.data$is.mirna.seq
+  attr(subtype.raw.data[[3]], 'is.met') = F
+  return(subtype.raw.data)
+}
+
 load.libraries <- function() {
   #tools
   library('PMA')
@@ -48,6 +58,7 @@ load.libraries <- function() {
   library('LRAcluster')
   reticulate::use_python(Sys.which('python3'), required = TRUE)
   library('reticulate')
+  library("DESeq2")
   stopifnot(file.exists("set_vars.sh"))
   system("sh set_vars.sh")
   #analysis
