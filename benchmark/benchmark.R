@@ -1,7 +1,3 @@
-source('nemo_benchmark/benchmark.R')
-source('nemo_benchmark/NEMO.R')
-source('SUMO.R')
-
 # overwrite some functions
 get.mkl.binary.path = function() {
   return(MKL.BINARY.PATH)
@@ -49,6 +45,10 @@ set.omics.list.attr <- function(subtype.raw.data, subtype.data) {
   return(subtype.raw.data)
 }
 
+get.vars.path <- function(){
+  return(VARS.FNAME)
+}
+
 load.libraries <- function() {
   #tools
   library('PMA')
@@ -59,8 +59,8 @@ load.libraries <- function() {
   reticulate::use_python(Sys.which('python3'), required = TRUE)
   library('reticulate')
   library("DESeq2")
-  stopifnot(file.exists("set_vars.sh"))
-  system("sh set_vars.sh")
+  stopifnot(file.exists(get.vars.path()))
+  system(paste("sh", get.vars.path()))
   #analysis
   library('survival')
 }
