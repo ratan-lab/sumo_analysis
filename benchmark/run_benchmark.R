@@ -16,8 +16,8 @@ SUMO.PATH <- "sumo"
 DATASETS.PATH = "data"
 RESULTS.DIR.PATH = "results"
 CLINICAL.PARAMS.DIR = "data/clinical"
-MC.CORES <- 3
-VARS.FNAME <- "set.vars.sh"
+MC.CORES <- 25
+VARS.FNAME <- "set_vars.sh"
 
 ALGORITHM.NAMES = c('snf','spectral', 'lracluster', 'pins', 'mcca', 'nemo', 'mkl', 'sumo')
 ALGORITHM.DISPLAY.NAMES = as.list(c('SNF','Spectral', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'rMKL-LPP', 'SUMO'))

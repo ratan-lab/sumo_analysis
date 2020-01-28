@@ -129,7 +129,7 @@ run.snf <- function(omics.list, subtype) {
   similarity.data = lapply(omics.list, function(x) {affinityMatrix(dist2(as.matrix(t(x)),as.matrix(t(x))), 
                                                                    num.neighbors, alpha)})
   W = SNF(similarity.data, num.neighbors, T.val)  
-  num.clusters = nlayers
+  num.clusters = nclusters
   clustering = spectralClustering(W, num.clusters)
   return(list(clustering=clustering))
 }
@@ -137,7 +137,7 @@ run.snf <- function(omics.list, subtype) {
 run.spectral <- function(omics.list, subtype) {
   concat.omics = do.call(rbind, omics.list)
   similarity.data = affinityMatrix(dist2(as.matrix(t(concat.omics)),as.matrix(t(concat.omics))), 20, 0.5)
-  num.clusters = nlayers
+  num.clusters = nclusters
   clustering = spectralClustering(similarity.data, num.clusters)
   return(list(clustering=clustering))
 }
@@ -168,7 +168,7 @@ run.mkl <- function(omics.list, subtype) {
   return(list(clustering=clustering))
 }
 
-run.mcca <- function(omics.list, subtype, known.num.clusters=nlayers, penalty=NULL, rep.omic=1) {# 2D noisy simulation
+run.mcca <- function(omics.list, subtype, known.num.clusters=nclusters, penalty=NULL, rep.omic=1) {# 2D noisy simulation
   max.dim = min(nlayers, nrow(omics.list[[1]]))
   omics.transposed = lapply(omics.list, t)
   cca.ret = PMA::MultiCCA(omics.transposed, type="ordered", ncomponents = 1, penalty=penalty) #type="standard", ncomponents = max.dim
@@ -177,7 +177,7 @@ run.mcca <- function(omics.list, subtype, known.num.clusters=nlayers, penalty=NU
   return(list(clustering=cca.clustering))
 }
 
-run.nemo <- function(omics.list, subtype.data, num.clusters=nlayers, is.missing.data=F, num.neighbors=NA) {# 2D noisy simulation
+run.nemo <- function(omics.list, subtype.data, num.clusters=nclusters, is.missing.data=F, num.neighbors=NA) {# 2D noisy simulation
   clustering = nemo.clustering(omics.list, num.clusters, num.neighbors)
   return(list(clustering=clustering))
 }
@@ -195,13 +195,13 @@ run.lracluster <- function(omics.list, subtype) {
                                   dimension=dimension, data.names)
   solution = clustering.results$coordinate
   
-  num.clusters = nlayers# 2D noisy simulation
+  num.clusters = nclusters# 2D noisy simulation
   print(paste('running kmeans in lra cluster for num clusters', num.clusters))
   clustering = kmeans(t(solution), num.clusters, iter.max=100, nstart=60)$cluster
   return(list(clustering=clustering))
 }
 
-run.sumo <- function(omics.list, subtype, num.clusters=nlayers, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
+run.sumo <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
   if (!dir.exists(file_dir)){
     dir.create(file_dir)
   }
@@ -235,7 +235,7 @@ run.sumo <- function(omics.list, subtype, num.clusters=nlayers, mc.cores=get.mc.
   return(list(clustering=clustering))
 }
 
-run.sumo_spectral <- function(omics.list, subtype, num.clusters=nlayers, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
+run.sumo_spectral <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
   if (!dir.exists(file_dir)){
     dir.create(file_dir)
   }
@@ -269,6 +269,25 @@ run.sumo_spectral <- function(omics.list, subtype, num.clusters=nlayers, mc.core
   return(list(clustering=clustering))
 }
 
+sumo.clustering <- function(k, fname, outdir, mc.cores = get.mc.cores()){
+  log <- paste0(paste(strsplit(fname, "\\.")[[1]][1:2], collapse = '.'), ".log")
+  command <- paste(get.sumo.path(), "run","-t", mc.cores,"-log DEBUG", "-logfile", log, fname, k, outdir)
+  print(command)
+  command.return = system(command)
+  stopifnot(command.return == 0)
+  
+  #TODO select the best results and point to them below
+  results_file <- file.path(outdir, paste0("k",k), "sumo_results.npz")
+  np <- import("numpy")
+  npz <- np$load(results_file, allow_pickle = T)
+  clusters <- npz$f[["clusters"]]
+  
+  clustering <- unlist(clusters[,2])
+  names(clustering) <- unlist(clusters[,1])
+  return(clustering)
+}
+
+
 sumo.clustering_spectral <- function(k, fname, outdir, mc.cores = get.mc.cores()){
   log <- paste0(paste(strsplit(fname, "\\.")[[1]][1:2], collapse = '.'), ".log")
   command <- paste(get.sumo.path(), "run","-method","spectral","-t", mc.cores,"-log DEBUG", "-logfile", log, fname, k, outdir)
@@ -277,7 +296,7 @@ sumo.clustering_spectral <- function(k, fname, outdir, mc.cores = get.mc.cores()
   stopifnot(command.return == 0)
   
   #TODO select the best results and point to them below
-  results_file <- file.path(outdir, paste0("k",2), "sumo_results.npz")
+  results_file <- file.path(outdir, paste0("k",k), "sumo_results.npz")
   np <- import("numpy")
   npz <- np$load(results_file, allow_pickle = T)
   clusters <- npz$f[["clusters"]]
@@ -306,7 +325,7 @@ run.sampling <- function(fnames, name) {
           algorithm.ret = algorithm.func(subtype.raw.data, subtype)
           clustering = algorithm.ret$clustering
           print('before saving')
-          write.table(data.frame(sample=samples, label=clustering), file=clustering.path, sep="\t", row.names = F, col.names = T)
+          write.table(data.frame(sample=names(clustering), label=clustering), file=clustering.path, sep="\t", row.names = F, col.names = T)
           result_files <- append(result_files, list(list(fname=clustering.path, subtype=subtype, algorithm=algorithm.name)))
         }
     }
@@ -321,7 +340,7 @@ run.evaluation <- function(results, outfile){
   vals <- c()
   metrics <- c()
   for (r in results){
-    stopifnot(file.exists(r$fname))
+     stopifnot(file.exists(r$fname))
     cmd <- paste(get.sumo.path(), 'evaluate', r$fname, get.base.labels.path())
     cmd.return <- system(cmd, intern=T)
     for (metric in c('ARI', 'NMI','purity')){
