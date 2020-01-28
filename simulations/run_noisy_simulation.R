@@ -53,7 +53,7 @@ SIMULATION.FILE.DIR <- "noisy"
 MKL.BINARY.PATH ="run_MKL_DR/application"
 MKL.ARGS.PATH = "MKL"
 MCR.ROOT = "~/MATLAB/MATLAB_Runtime/v90"
-MC.CORES <- 1
+MC.CORES <- 2
 SUMO.PATH <- "sumo"
 VARS.FNAME <- "../benchmark/set_vars.sh"
 ALGORITHM.NAMES = c('snf','spectral', 'lracluster', 'pins', 'mcca', 'nemo', 'sumo', 'sumo_spectral') #'mkl'

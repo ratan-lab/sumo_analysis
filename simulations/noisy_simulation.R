@@ -325,7 +325,12 @@ run.sampling <- function(fnames, name) {
           algorithm.ret = algorithm.func(subtype.raw.data, subtype)
           clustering = algorithm.ret$clustering
           print('before saving')
-          write.table(data.frame(sample=names(clustering), label=clustering), file=clustering.path, sep="\t", row.names = F, col.names = T)
+          if(!is.null(names(clustering))){
+            write.table(data.frame(sample=names(clustering), label=clustering), file=clustering.path, sep="\t", row.names = F, col.names = T)
+          } else {
+            # assume the same sample order
+            write.table(data.frame(sample=samples, label=clustering), file=clustering.path, sep="\t", row.names = F, col.names = T)
+          }
           result_files <- append(result_files, list(list(fname=clustering.path, subtype=subtype, algorithm=algorithm.name)))
         }
     }
