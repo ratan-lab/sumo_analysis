@@ -55,7 +55,7 @@ generate.gamma.data <- function(sampling="gamma"){
   
   # create different gamma layers
   for (i in 1:length(gamma_spl_k)){
-    fname <- file.path(get.gamma.dir.path(), paste0("gamma_k_", gamma_spl_k[i],".tsv"))
+    fname <- file.path(data_dir, paste0("gamma_k_", gamma_spl_k[i],".tsv"))
     print(paste("Created:", fname))
     data <- base_data + matrix(rgamma(n=nsamples*nfeatures, shape = gamma_spl_k[i], scale = gamma_spl_theta), ncol=nsamples, nrow=nfeatures)
     write.table(data, file=fname, sep = "\t", row.names = T, col.names = T)
@@ -75,14 +75,14 @@ generate.gauss.data <- function(sampling="gauss"){
   GAUSS.FILES <- list()
   
   #create midly noisy gamma layer
-  gamma_fname <- file.path(get.data.dir.path(sampling), "gamma_layer.tsv")
+  gamma_fname <- file.path(data_dir, "gamma_layer.tsv")
   print(paste("Created:", gamma_fname))
   data <- base_data +  matrix(rgamma(n=nsamples*nfeatures, shape = gauss_spl_k, scale = gauss_spl_theta), ncol=nsamples, nrow=nfeatures)
   write.table(data, file=gamma_fname, sep = "\t", row.names = T, col.names = T)
   
   # create different gauss layers
   for (i in 1:length(gauss_spl_std)){
-    fname <- file.path(get.gauss.dir.path(), paste0("gauss_std_", gauss_spl_std[i],".tsv"))
+    fname <- file.path(data_dir, paste0("gauss_std_", gauss_spl_std[i],".tsv"))
     print(paste("Created:", fname))
     data <- base_data + matrix(rnorm(n=nsamples*nfeatures, mean = gauss_spl_mean, sd = gauss_spl_std[i]), ncol=nsamples, nrow=nfeatures)
     write.table(data, file=fname, sep = "\t", row.names = T, col.names = T)
@@ -90,6 +90,33 @@ generate.gauss.data <- function(sampling="gauss"){
   }
   
   return(GAUSS.FILES)
+}
+
+generate.two.gauss.layers <- function(sampling){
+  base_data <- read.table(get.base.data.path())
+  data_dir <- get.data.dir.path(sampling)
+  if(!dir.exists(data_dir)){
+    dir.create(data_dir)
+  }
+  set.seed(RANDOM.SEED)
+  FILE.LIST <- list()
+  
+  #create constant layer
+  constant_fname <- file.path(data_dir, "constant_layer.tsv")
+  print(paste("Created:", constant_fname))
+  data <- base_data +  matrix(rnorm(n=nsamples*nfeatures, mean = gauss_mean, sd = gauss_std), ncol=nsamples, nrow=nfeatures)
+  write.table(data, file=constant_fname, sep = "\t", row.names = T, col.names = T)
+  
+  # create different gauss layers
+  for (i in 1:length(gauss_spl_std)){
+    fname <- file.path(data_dir, paste0("gauss_std_", gauss_spl_std[i],".tsv"))
+    print(paste("Created:", fname))
+    data <- base_data + matrix(rnorm(n=nsamples*nfeatures, mean = gauss_spl_mean, sd = gauss_spl_std[i]), ncol=nsamples, nrow=nfeatures)
+    write.table(data, file=fname, sep = "\t", row.names = T, col.names = T)
+    FILE.LIST <- append(FILE.LIST, list(list(layer1=fname, layer2=constant_fname)))
+  }
+  
+  return(FILE.LIST)
 }
 
 get.raw.data <-function(data){
@@ -343,4 +370,26 @@ run.evaluation <- function(results, outfile){
   }
   data <- data.frame(algoritm=algorithms, subtype=subtypes, metric = metrics, val = vals)
   write.table(data, file=outfile, sep = "\t", row.names = F, col.names = T)
+}
+
+prepare.simulation <- function(){
+  for (dir_path in c(SIMULATION.FILE.DIR, get.sumo.files.dir())){
+    if (!dir.exists(dir_path)){
+      dir.create(dir_path)
+    }  
+  }
+  load.libraries()
+  generate.original.dataset()
+}
+
+run.simulation <- function(files, sampling_name){
+  dir_name <- get.clustering.results.dir.path(sampling_name)
+  if (!dir.exists(dir_name)){
+    dir.create(dir_name)
+  }  
+  ORG.SUMO.FILES.DIR <- get.sumo.files.dir()
+  SUMO.FILES.DIR <<- file.path(ORG.SUMO.FILES.DIR, sampling_name)
+  results <- run.sampling(fnames=files, name=sampling_name)
+  SUMO.FILES.DIR <<- ORG.SUMO.FILES.DIR
+  return(results)
 }
