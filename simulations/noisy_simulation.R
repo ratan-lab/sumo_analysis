@@ -11,6 +11,9 @@ get.base.labels.path <- function(){
   return(file.path(SIMULATION.FILE.DIR, "base_labels.tsv"))
 }
 
+get.data.dir.path <- function(sampling){
+  return(file.path(SIMULATION.FILE.DIR, paste(sampling, "data", sep="_")))
+}
 
 get.gamma.dir.path <- function(){
   return(file.path(SIMULATION.FILE.DIR, "gamma_data"))
@@ -35,13 +38,17 @@ generate.original.dataset <- function(){
   stopifnot(cmd.return == 0)
 }
 
-generate.gamma.data <- function(){
+generate.gamma.data <- function(sampling="gamma"){
   base_data <- read.table(get.base.data.path())
+  data_dir <- get.data.dir.path(sampling)
+  if(!dir.exists(data_dir)){
+    dir.create(data_dir)
+  }
   set.seed(RANDOM.SEED)
   GAMMA.FILES <- list()
   
   #create midly noisy gauss layer
-  gauss_fname <- file.path(get.gamma.dir.path(), "gauss_layer.tsv")
+  gauss_fname <- file.path(data_dir, "gauss_layer.tsv")
   print(paste("Created:", gauss_fname))
   data <- base_data +  matrix(rnorm(n=nsamples*nfeatures, mean = gamma_spl_mean, sd = gamma_spl_std), ncol=nsamples, nrow=nfeatures)
   write.table(data, file=gauss_fname, sep = "\t", row.names = T, col.names = T)
@@ -52,19 +59,23 @@ generate.gamma.data <- function(){
     print(paste("Created:", fname))
     data <- base_data + matrix(rgamma(n=nsamples*nfeatures, shape = gamma_spl_k[i], scale = gamma_spl_theta), ncol=nsamples, nrow=nfeatures)
     write.table(data, file=fname, sep = "\t", row.names = T, col.names = T)
-    GAMMA.FILES <- append(GAMMA.FILES, list(list(gauss=gauss_fname, gamma=fname)))
+    GAMMA.FILES <- append(GAMMA.FILES, list(list(layer1=gauss_fname, layer2=fname)))
   }
   
   return(GAMMA.FILES)
 }
 
-generate.gauss.data <- function(){
+generate.gauss.data <- function(sampling="gauss"){
   base_data <- read.table(get.base.data.path())
+  data_dir <- get.data.dir.path(sampling)
+  if(!dir.exists(data_dir)){
+    dir.create(data_dir)
+  }
   set.seed(RANDOM.SEED)
   GAUSS.FILES <- list()
   
   #create midly noisy gamma layer
-  gamma_fname <- file.path(get.gauss.dir.path(), "gamma_layer.tsv")
+  gamma_fname <- file.path(get.data.dir.path(sampling), "gamma_layer.tsv")
   print(paste("Created:", gamma_fname))
   data <- base_data +  matrix(rgamma(n=nsamples*nfeatures, shape = gauss_spl_k, scale = gauss_spl_theta), ncol=nsamples, nrow=nfeatures)
   write.table(data, file=gamma_fname, sep = "\t", row.names = T, col.names = T)
@@ -75,20 +86,20 @@ generate.gauss.data <- function(){
     print(paste("Created:", fname))
     data <- base_data + matrix(rnorm(n=nsamples*nfeatures, mean = gauss_spl_mean, sd = gauss_spl_std[i]), ncol=nsamples, nrow=nfeatures)
     write.table(data, file=fname, sep = "\t", row.names = T, col.names = T)
-    GAUSS.FILES <- append(GAUSS.FILES, list(list(gauss=fname, gamma=gamma_fname)))
+    GAUSS.FILES <- append(GAUSS.FILES, list(list(layer1=fname, layer2=gamma_fname)))
   }
   
   return(GAUSS.FILES)
 }
 
 get.raw.data <-function(data){
-  gamma <- read.table(data$gamma)
-  attr(gamma, 'name') <- 'gamma'
-  attr(gamma, 'fname') <- data$gamma
-  gauss <- read.table(data$gauss)
-  attr(gauss, 'name') <- 'gauss'
-  attr(gauss, 'fname') <- data$gauss
-  return(list(gamma, gauss))
+  layer1 <- read.table(data$layer1)
+  attr(layer1, 'name') <- 'layer1'
+  attr(layer1, 'fname') <- data$layer1
+  layer2 <- read.table(data$layer2)
+  attr(layer2, 'name') <- 'layer2'
+  attr(layer2, 'fname') <- data$layer2
+  return(list(layer1, layer2))
 }
 
 run.snf <- function(omics.list, subtype) {
