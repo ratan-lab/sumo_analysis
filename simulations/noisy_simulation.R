@@ -24,46 +24,15 @@ get.clustering.results.dir.path <- function(name){
   return(file.path(SIMULATION.FILE.DIR, paste0(name,"_results")))
 }
 
+get.generate.data.script <-function(){
+  return(GENERATE.DATA.SCRIPT)
+}
+
 generate.original.dataset <- function(){
-  # create base data  
-  set.seed(RANDOM.SEED)
-  data <- matrix(rnorm(n=nsamples*nfeatures, mean=base_mean, sd=base_sd), ncol=nsamples, nrow=nfeatures)
-  clustersize = rep(as.integer(nsamples/nclusters), nclusters)
-  if (sum(clustersize) < nsamples){
-    clustersize[1] = clustersize[1] + (nsamples - sum(clustersize))
-  }
-  true_labels <- c()
-  for (cls_idx in 0:(nclusters -1)){
-    true_labels <- c(true_labels, rep(cls_idx, clustersize[cls_idx + 1]))
-  }
-  truth <-data.frame(sample=paste0("sample_",1:nsamples), label=true_labels)
-  write.table(truth, file=get.base.labels.path(), sep = "\t", row.names = F, col.names = T)
-  
-  # overexpress
-  stopifnot(length(over_mean) == nclusters & length(over_sd) == nclusters)
-  overexpressed = rep(round(fraq*nfeatures), nclusters)
-  if (sum(overexpressed) > nsamples){
-    overexpressed[1] = overexpressed[1] - (sum(overexpressed)- nsamples)
-  }
-  sample_start <- 1 
-  feature_start <- 1
-  for (cl_idx in 1:nclusters){
-    sample_range <- sample_start:(clustersize[cl_idx] + sample_start - 1)
-    sample_start <- tail(sample_range,n=1) + 1
-    
-    feature_range <- feature_start:(overexpressed[cl_idx] + feature_start - 1)
-    feature_start <- tail(feature_range,n=1) + 1
-    
-    over_data <- matrix(rnorm(n=clustersize[cl_idx]*overexpressed[cl_idx], mean=over_mean[cl_idx], sd=over_sd[cl_idx]), 
-                        ncol=clustersize[cl_idx], nrow=overexpressed[cl_idx])
-    data[feature_range, sample_range] <- data[feature_range, sample_range] + over_data
-    
-    #save data with overexpressed
-    colnames(data) <- paste0("sample_",1:nsamples)
-    rownames(data) <- paste0("feature_",1:nfeatures)
-    write.table(data, file=get.base.data.path(), sep = "\t", row.names = T, col.names = T)
-    
-  }
+  # create base data and base labels
+  cmd = paste("python3", get.generate.data.script(), "-rstate", RANDOM.SEED ,"-sd",cluster_sd, nsamples, nfeatures, nclusters, SIMULATION.FILE.DIR)
+  cmd.return = system(cmd, intern = F)
+  stopifnot(cmd.return == 0)
 }
 
 generate.gamma.data <- function(){
@@ -78,10 +47,10 @@ generate.gamma.data <- function(){
   write.table(data, file=gauss_fname, sep = "\t", row.names = T, col.names = T)
   
   # create different gamma layers
-  for (i in 1:length(gamma_spl_theta)){
-    fname <- file.path(get.gamma.dir.path(), paste0("gamma_theta_", gamma_spl_theta[i],".tsv"))
+  for (i in 1:length(gamma_spl_k)){
+    fname <- file.path(get.gamma.dir.path(), paste0("gamma_k_", gamma_spl_k[i],".tsv"))
     print(paste("Created:", fname))
-    data <- base_data + matrix(rgamma(n=nsamples*nfeatures, shape = gamma_spl_k, scale = gamma_spl_theta[i]), ncol=nsamples, nrow=nfeatures)
+    data <- base_data + matrix(rgamma(n=nsamples*nfeatures, shape = gamma_spl_k[i], scale = gamma_spl_theta), ncol=nsamples, nrow=nfeatures)
     write.table(data, file=fname, sep = "\t", row.names = T, col.names = T)
     GAMMA.FILES <- append(GAMMA.FILES, list(list(gauss=gauss_fname, gamma=fname)))
   }
@@ -101,10 +70,10 @@ generate.gauss.data <- function(){
   write.table(data, file=gamma_fname, sep = "\t", row.names = T, col.names = T)
   
   # create different gauss layers
-  for (i in 1:length(gauss_spl_mean)){
-    fname <- file.path(get.gauss.dir.path(), paste0("gauss_mean_", gauss_spl_mean[i],".tsv"))
+  for (i in 1:length(gauss_spl_std)){
+    fname <- file.path(get.gauss.dir.path(), paste0("gauss_std_", gauss_spl_std[i],".tsv"))
     print(paste("Created:", fname))
-    data <- base_data + matrix(rnorm(n=nsamples*nfeatures, mean = gauss_spl_mean[i], sd = gauss_spl_std), ncol=nsamples, nrow=nfeatures)
+    data <- base_data + matrix(rnorm(n=nsamples*nfeatures, mean = gauss_spl_mean, sd = gauss_spl_std[i]), ncol=nsamples, nrow=nfeatures)
     write.table(data, file=fname, sep = "\t", row.names = T, col.names = T)
     GAUSS.FILES <- append(GAUSS.FILES, list(list(gauss=fname, gamma=gamma_fname)))
   }
@@ -126,7 +95,7 @@ run.snf <- function(omics.list, subtype) {
   alpha=0.5
   T.val=30
   num.neighbors = round(ncol(omics.list[[1]]) / 10)
-  similarity.data = lapply(omics.list, function(x) {affinityMatrix(dist2(as.matrix(t(x)),as.matrix(t(x))), 
+  similarity.data = lapply(omics.list, function(x) {affinityMatrix(SNFtool::dist2(as.matrix(t(x)),as.matrix(t(x))), 
                                                                    num.neighbors, alpha)})
   W = SNF(similarity.data, num.neighbors, T.val)  
   num.clusters = nclusters
@@ -136,7 +105,7 @@ run.snf <- function(omics.list, subtype) {
 
 run.spectral <- function(omics.list, subtype) {
   concat.omics = do.call(rbind, omics.list)
-  similarity.data = affinityMatrix(dist2(as.matrix(t(concat.omics)),as.matrix(t(concat.omics))), 20, 0.5)
+  similarity.data = affinityMatrix(SNFtool::dist2(as.matrix(t(concat.omics)),as.matrix(t(concat.omics))), 20, 0.5)
   num.clusters = nclusters
   clustering = spectralClustering(similarity.data, num.clusters)
   return(list(clustering=clustering))

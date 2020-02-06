@@ -357,31 +357,3 @@ perform.all.analyses <- function(benchmark.ret) {
     print('------------------------')
   }
 }
-
-
-
-plot_results <- function(){
-
-  library(tidyverse)
-
-  clin <- read_csv(file.path(get.tables.dir.path(), "clinical_multi_omics.csv"))
-  surv <- read_csv(file.path(get.tables.dir.path(), "survival_multi_omics.csv"))
-
-  clin_long <- clin %>%
-    gather(cancer, clin, -X1) %>%
-    mutate(tool=X1) %>%
-    select(-X1)
-
-  surv %>%
-    gather(cancer, surv, -X1) %>%
-    mutate(tool=X1) %>%
-    select(-X1) %>%
-    full_join(clin_long) %>%
-    ggplot() + geom_point(aes(x=surv, y=clin, color=tool)) + facet_wrap(cancer~., scales="free") +
-    xlab("-log10(logrank pvalue)") + ylab("# enriched clinical parameters") + labs(color="") +
-    theme(legend.position="bottom") + geom_vline(xintercept = -log10(0.05), color="red")
-
-  p <- last_plot()
-  return(p)
-
-}

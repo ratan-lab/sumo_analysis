@@ -33,6 +33,3 @@ run.benchmark()
 # calculate empirical survival and enriched clinical labels
 results <- analyze.benchmark()
 perform.all.analyses(results)
-
-# plot results
-p <- plot_results()

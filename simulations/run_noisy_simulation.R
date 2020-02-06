@@ -27,34 +27,33 @@ nsamples =  200
 nfeatures = 400
 nclusters = 2
 nlayers = 2
-fraq = 0.2
-base_mean = 0
-base_sd =1
-over_mean = c(2, 3) #first cluster have a fraction of features with mean=2 and sd=3 (set below) added to base distribution
-over_sd = c(3, 2) 
+cluster_sd = 0.5
 
 # gamma_sampling
-gamma_spl_mean <-2
-gamma_spl_std <- 5
-gamma_spl_k <- 1.5
-gamma_spl_theta <- seq(0,10,0.5)
+gamma_spl_mean <-0
+gamma_spl_std <- 1.5
+# gamma_spl_k <- seq(0,5,0.25)
+gamma_spl_k <- seq(0,5,5)
+gamma_spl_theta <- 1
 
 # gaussian_sampling
-gauss_spl_mean <- seq(0,5, 0.25)
-gauss_spl_std <- 5
-gauss_spl_k <- 1.5
-gauss_spl_theta <- 5
+gauss_spl_mean <- 0
+# gauss_spl_std <- seq(0,3, 0.2)
+gauss_spl_std <- seq(0,3, 3)
+gauss_spl_k <- 3
+gauss_spl_theta <- 1
 
 # simulation params
 RANDOM.SEED <- 42
 SIMULATION.FILE.DIR <- "noisy"
 
 # benchmark params
-MKL.BINARY.PATH ="run_MKL_DR/application"
-MKL.ARGS.PATH = "MKL"
-MCR.ROOT = "~/MATLAB/MATLAB_Runtime/v90"
-MC.CORES <- 2
+# MKL.BINARY.PATH ="run_MKL_DR/application"
+# MKL.ARGS.PATH = "MKL"
+# MCR.ROOT = "~/MATLAB/MATLAB_Runtime/v90"
+MC.CORES <- 4
 SUMO.PATH <- "sumo"
+GENERATE.DATA.SCRIPT <- "generate_data.py"
 VARS.FNAME <- "../benchmark/set_vars.sh"
 ALGORITHM.NAMES = c('snf','spectral', 'lracluster', 'pins', 'mcca', 'nemo', 'sumo', 'sumo_spectral') #'mkl'
 ALGORITHM.DISPLAY.NAMES = as.list(c('SNF','Spectral', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'SUMO', "SUMOspectral")) #'rMKL-LPP'
