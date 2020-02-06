@@ -92,6 +92,7 @@ get.raw.data <-function(data){
 }
 
 run.snf <- function(omics.list, subtype) {
+  omics.list = lapply(omics.list, normalize.matrix)  
   alpha=0.5
   T.val=30
   num.neighbors = round(ncol(omics.list[[1]]) / 10)
@@ -104,6 +105,7 @@ run.snf <- function(omics.list, subtype) {
 }
 
 run.spectral <- function(omics.list, subtype) {
+  omics.list = lapply(omics.list, normalize.matrix)  
   concat.omics = do.call(rbind, omics.list)
   similarity.data = affinityMatrix(SNFtool::dist2(as.matrix(t(concat.omics)),as.matrix(t(concat.omics))), 20, 0.5)
   num.clusters = nclusters
@@ -119,7 +121,7 @@ run.pins <- function(omics.list, subtype) {
 }
 
 run.mkl <- function(omics.list, subtype) {
-  # omics.list = lapply(omics.list, normalize.matrix)
+  omics.list = lapply(omics.list, normalize.matrix)
   export.subtype.to.mkl(omics.list, subtype)
   bin.path = get.mkl.binary.path()
   subtype.dir = paste(get.mkl.arguments.path(), subtype, sep='/')
@@ -138,6 +140,7 @@ run.mkl <- function(omics.list, subtype) {
 }
 
 run.mcca <- function(omics.list, subtype, known.num.clusters=nclusters, penalty=NULL, rep.omic=1) {# 2D noisy simulation
+  omics.list = lapply(omics.list, normalize.matrix)  
   max.dim = min(nlayers, nrow(omics.list[[1]]))
   omics.transposed = lapply(omics.list, t)
   cca.ret = PMA::MultiCCA(omics.transposed, type="ordered", ncomponents = 1, penalty=penalty) #type="standard", ncomponents = max.dim
@@ -147,6 +150,7 @@ run.mcca <- function(omics.list, subtype, known.num.clusters=nclusters, penalty=
 }
 
 run.nemo <- function(omics.list, subtype.data, num.clusters=nclusters, is.missing.data=F, num.neighbors=NA) {# 2D noisy simulation
+  omics.list = lapply(omics.list, normalize.matrix)  
   clustering = nemo.clustering(omics.list, num.clusters, num.neighbors)
   return(list(clustering=clustering))
 }

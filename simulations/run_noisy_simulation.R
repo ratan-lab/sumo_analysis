@@ -32,14 +32,12 @@ cluster_sd = 0.5
 # gamma_sampling
 gamma_spl_mean <-0
 gamma_spl_std <- 1.5
-# gamma_spl_k <- seq(0,5,0.25)
-gamma_spl_k <- seq(0,5,5)
+gamma_spl_k <- seq(0,5,0.25)
 gamma_spl_theta <- 1
 
 # gaussian_sampling
 gauss_spl_mean <- 0
-# gauss_spl_std <- seq(0,3, 0.2)
-gauss_spl_std <- seq(0,3, 3)
+gauss_spl_std <- seq(0,3, 0.2)
 gauss_spl_k <- 3
 gauss_spl_theta <- 1
 
@@ -61,4 +59,3 @@ names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
 SUMO.FILES.DIR <- file.path(SIMULATION.FILE.DIR, "sumo_files")
 
 run.simulation()
-    
