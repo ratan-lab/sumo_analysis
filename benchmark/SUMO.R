@@ -98,3 +98,23 @@ run.sumo <- function(omics.list, subtype.data, num.clusters=NULL, mc.cores=get.m
   time.taken = as.numeric(Sys.time() - start, units='secs')
   return(list(clustering=clustering, timing=time.taken))
 }
+
+move.sumo.files <- function(){
+  for (s in SUBTYPES.DATA){
+    subtype <- s$name
+    for (k in 2:MAX.NUM.CLUSTERS){
+      #clustering
+      fname <- file.path(get.sumo.files.dir(), subtype, paste0('k',k),'clusters.tsv')
+      data <- read.table(fname, check.names = F, header = T, row.names = 1)
+      clustering <- data$label
+      names(clustering) <- rownames(data)
+      outfile <- file.path(get.clustering.results.dir.path(),paste(subtype, paste0('sumo',k), 'all', sep = "_"))
+      save(clustering, file = outfile)
+      #timing
+      cmd <- paste('cp', file.path(get.clustering.results.dir.path(),paste(subtype, 'sumo', 'all','timing', sep = "_")), 
+                   file.path(get.clustering.results.dir.path(),paste(subtype, paste0('sumo',k), 'all','timing', sep = "_")))
+      cmd.return = system(cmd)
+      stopifnot(cmd.return == 0)
+    }
+  }
+}

@@ -11,13 +11,8 @@ get.base.labels.path <- function(){
   return(file.path(SIMULATION.FILE.DIR, "base_labels.tsv"))
 }
 
-
-get.gamma.dir.path <- function(){
-  return(file.path(SIMULATION.FILE.DIR, "gamma_data"))
-}
-
-get.gauss.dir.path <- function(){
-  return(file.path(SIMULATION.FILE.DIR, "gauss_data"))
+get.data.dir.path <- function(sampling){
+  return(file.path(SIMULATION.FILE.DIR, paste(sampling, "data", sep="_")))
 }
 
 get.clustering.results.dir.path <- function(name){
@@ -35,63 +30,45 @@ generate.original.dataset <- function(){
   stopifnot(cmd.return == 0)
 }
 
-generate.gamma.data <- function(){
+generate.two.gauss.layers <- function(sampling){
   base_data <- read.table(get.base.data.path())
-  set.seed(RANDOM.SEED)
-  GAMMA.FILES <- list()
-  
-  #create midly noisy gauss layer
-  gauss_fname <- file.path(get.gamma.dir.path(), "gauss_layer.tsv")
-  print(paste("Created:", gauss_fname))
-  data <- base_data +  matrix(rnorm(n=nsamples*nfeatures, mean = gamma_spl_mean, sd = gamma_spl_std), ncol=nsamples, nrow=nfeatures)
-  write.table(data, file=gauss_fname, sep = "\t", row.names = T, col.names = T)
-  
-  # create different gamma layers
-  for (i in 1:length(gamma_spl_k)){
-    fname <- file.path(get.gamma.dir.path(), paste0("gamma_k_", gamma_spl_k[i],".tsv"))
-    print(paste("Created:", fname))
-    data <- base_data + matrix(rgamma(n=nsamples*nfeatures, shape = gamma_spl_k[i], scale = gamma_spl_theta), ncol=nsamples, nrow=nfeatures)
-    write.table(data, file=fname, sep = "\t", row.names = T, col.names = T)
-    GAMMA.FILES <- append(GAMMA.FILES, list(list(gauss=gauss_fname, gamma=fname)))
+  data_dir <- get.data.dir.path(sampling)
+  if(!dir.exists(data_dir)){
+    dir.create(data_dir)
   }
-  
-  return(GAMMA.FILES)
-}
-
-generate.gauss.data <- function(){
-  base_data <- read.table(get.base.data.path())
   set.seed(RANDOM.SEED)
-  GAUSS.FILES <- list()
+  FILE.LIST <- list()
   
-  #create midly noisy gamma layer
-  gamma_fname <- file.path(get.gauss.dir.path(), "gamma_layer.tsv")
-  print(paste("Created:", gamma_fname))
-  data <- base_data +  matrix(rgamma(n=nsamples*nfeatures, shape = gauss_spl_k, scale = gauss_spl_theta), ncol=nsamples, nrow=nfeatures)
-  write.table(data, file=gamma_fname, sep = "\t", row.names = T, col.names = T)
+  #create constant layer
+  constant_fname <- file.path(data_dir, "constant_layer.tsv")
+  print(paste("Created:", constant_fname))
+  data <- base_data +  matrix(rnorm(n=nsamples*nfeatures, mean = gauss_mean, sd = gauss_std), ncol=nsamples, nrow=nfeatures)
+  write.table(data, file=constant_fname, sep = "\t", row.names = T, col.names = T)
   
   # create different gauss layers
   for (i in 1:length(gauss_spl_std)){
-    fname <- file.path(get.gauss.dir.path(), paste0("gauss_std_", gauss_spl_std[i],".tsv"))
+    fname <- file.path(data_dir, paste0("gauss_std_", gauss_spl_std[i],".tsv"))
     print(paste("Created:", fname))
     data <- base_data + matrix(rnorm(n=nsamples*nfeatures, mean = gauss_spl_mean, sd = gauss_spl_std[i]), ncol=nsamples, nrow=nfeatures)
     write.table(data, file=fname, sep = "\t", row.names = T, col.names = T)
-    GAUSS.FILES <- append(GAUSS.FILES, list(list(gauss=fname, gamma=gamma_fname)))
+    FILE.LIST <- append(FILE.LIST, list(list(layer1=fname, layer2=constant_fname)))
   }
   
-  return(GAUSS.FILES)
+  return(FILE.LIST)
 }
 
 get.raw.data <-function(data){
-  gamma <- read.table(data$gamma)
-  attr(gamma, 'name') <- 'gamma'
-  attr(gamma, 'fname') <- data$gamma
-  gauss <- read.table(data$gauss)
-  attr(gauss, 'name') <- 'gauss'
-  attr(gauss, 'fname') <- data$gauss
-  return(list(gamma, gauss))
+  layer1 <- read.table(data$layer1)
+  attr(layer1, 'name') <- 'layer1'
+  attr(layer1, 'fname') <- data$layer1
+  layer2 <- read.table(data$layer2)
+  attr(layer2, 'name') <- 'layer2'
+  attr(layer2, 'fname') <- data$layer2
+  return(list(layer1, layer2))
 }
 
 run.snf <- function(omics.list, subtype) {
+  start = Sys.time()
   omics.list = lapply(omics.list, normalize.matrix)  
   alpha=0.5
   T.val=30
@@ -101,28 +78,37 @@ run.snf <- function(omics.list, subtype) {
   W = SNF(similarity.data, num.neighbors, T.val)  
   num.clusters = nclusters
   clustering = spectralClustering(W, num.clusters)
-  return(list(clustering=clustering))
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
 }
 
 run.spectral <- function(omics.list, subtype) {
+  start = Sys.time()
   omics.list = lapply(omics.list, normalize.matrix)  
   concat.omics = do.call(rbind, omics.list)
   similarity.data = affinityMatrix(SNFtool::dist2(as.matrix(t(concat.omics)),as.matrix(t(concat.omics))), 20, 0.5)
   num.clusters = nclusters
   clustering = spectralClustering(similarity.data, num.clusters)
-  return(list(clustering=clustering))
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
 }
 
 run.pins <- function(omics.list, subtype) {
+  start = Sys.time()
   omics.transposed = lapply(omics.list, t)
   pins.ret = PINSPlus::SubtypingOmicsData(dataList=omics.transposed, kMax = nlayers)
   clustering = pins.ret$cluster1
-  return(list(clustering=clustering))
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
 }
 
 run.mkl <- function(omics.list, subtype) {
+  start = Sys.time()
   omics.list = lapply(omics.list, normalize.matrix)
+  time.taken = as.numeric(Sys.time() - start, units='secs')
   export.subtype.to.mkl(omics.list, subtype)
+  
+  start = Sys.time()
   bin.path = get.mkl.binary.path()
   subtype.dir = paste(get.mkl.arguments.path(), subtype, sep='/')
   paste(subtype.dir, 'kernels', sep='/')
@@ -135,27 +121,33 @@ run.mkl <- function(omics.list, subtype) {
   command.return = system(command)
   setwd(rundir)
   stopifnot(command.return == 0)
+  time.taken2 = as.numeric(Sys.time() - start, units='secs')
   clustering = get.mkl.clustering(subtype)
-  return(list(clustering=clustering))
+  return(list(clustering=clustering, timing=time.taken + time.taken2))
 }
 
 run.mcca <- function(omics.list, subtype, known.num.clusters=nclusters, penalty=NULL, rep.omic=1) {# 2D noisy simulation
+  start = Sys.time()
   omics.list = lapply(omics.list, normalize.matrix)  
   max.dim = min(nlayers, nrow(omics.list[[1]]))
   omics.transposed = lapply(omics.list, t)
   cca.ret = PMA::MultiCCA(omics.transposed, type="ordered", ncomponents = 1, penalty=penalty) #type="standard", ncomponents = max.dim
   sample.rep = omics.transposed[[rep.omic]] %*% cca.ret$ws[[rep.omic]]
   cca.clustering = kmeans(sample.rep, known.num.clusters, iter.max=100, nstart=30)$cluster  
-  return(list(clustering=cca.clustering))
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=cca.clustering, timing=time.taken))
 }
 
 run.nemo <- function(omics.list, subtype.data, num.clusters=nclusters, is.missing.data=F, num.neighbors=NA) {# 2D noisy simulation
+  start = Sys.time()
   omics.list = lapply(omics.list, normalize.matrix)  
   clustering = nemo.clustering(omics.list, num.clusters, num.neighbors)
-  return(list(clustering=clustering))
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
 }
 
 run.lracluster <- function(omics.list, subtype) {
+  start = Sys.time()
   dim.range = 1:nlayers
   all.clustering.results = list()
   
@@ -171,10 +163,12 @@ run.lracluster <- function(omics.list, subtype) {
   num.clusters = nclusters# 2D noisy simulation
   print(paste('running kmeans in lra cluster for num clusters', num.clusters))
   clustering = kmeans(t(solution), num.clusters, iter.max=100, nstart=60)$cluster
-  return(list(clustering=clustering))
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
 }
 
 run.sumo <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
+  start = Sys.time()
   if (!dir.exists(file_dir)){
     dir.create(file_dir)
   }
@@ -205,10 +199,12 @@ run.sumo <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.m
   
   outdir = file.path(file_dir, subtype)
   clustering = sumo.clustering(num.clusters, outfile, outdir, mc.cores)
-  return(list(clustering=clustering))
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
 }
 
 run.sumo_spectral <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
+  start = Sys.time()
   if (!dir.exists(file_dir)){
     dir.create(file_dir)
   }
@@ -239,7 +235,8 @@ run.sumo_spectral <- function(omics.list, subtype, num.clusters=nclusters, mc.co
   
   outdir = file.path(file_dir, subtype)
   clustering = sumo.clustering_spectral(num.clusters, outfile, outdir, mc.cores)
-  return(list(clustering=clustering))
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
 }
 
 sumo.clustering <- function(k, fname, outdir, mc.cores = get.mc.cores()){
@@ -292,12 +289,15 @@ run.sampling <- function(fnames, name) {
         set.seed(RANDOM.SEED)
         print(paste('data', subtype, 'running algorithm', algorithm.name))
         clustering.path = file.path(get.clustering.results.dir.path(name), paste0(subtype, "_", algorithm.name, ".tsv"))
+        timing.path = file.path(get.clustering.results.dir.path(name), paste0(subtype, "_",algorithm.name, '_timing'))
         if (!file.exists(clustering.path)) {
           algorithm.func.name = paste0('run.', algorithm.name)
           algorithm.func = get(algorithm.func.name)
           algorithm.ret = algorithm.func(subtype.raw.data, subtype)
           clustering = algorithm.ret$clustering
+          timing = algorithm.ret$timing
           print('before saving')
+          save(timing, file = timing.path)
           if(!is.null(names(clustering))){
             write.table(data.frame(sample=names(clustering), label=clustering), file=clustering.path, sep="\t", row.names = F, col.names = T)
           } else {
@@ -332,4 +332,26 @@ run.evaluation <- function(results, outfile){
   }
   data <- data.frame(algoritm=algorithms, subtype=subtypes, metric = metrics, val = vals)
   write.table(data, file=outfile, sep = "\t", row.names = F, col.names = T)
+}
+
+prepare.simulation <- function(){
+  for (dir_path in c(SIMULATION.FILE.DIR, get.sumo.files.dir())){
+    if (!dir.exists(dir_path)){
+      dir.create(dir_path)
+    }  
+  }
+  load.libraries()
+  generate.original.dataset()
+}
+
+run.simulation <- function(files, sampling_name){
+  dir_name <- get.clustering.results.dir.path(sampling_name)
+  if (!dir.exists(dir_name)){
+    dir.create(dir_name)
+  }  
+  ORG.SUMO.FILES.DIR <- get.sumo.files.dir()
+  SUMO.FILES.DIR <<- file.path(ORG.SUMO.FILES.DIR, sampling_name)
+  results <- run.sampling(fnames=files, name=sampling_name)
+  SUMO.FILES.DIR <<- ORG.SUMO.FILES.DIR
+  return(results)
 }

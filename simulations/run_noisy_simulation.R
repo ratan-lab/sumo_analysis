@@ -1,49 +1,11 @@
 source("noisy_simulation.R")
 
-run.simulation <- function(){
-  for (dir_path in c(SIMULATION.FILE.DIR, get.gauss.dir.path(), get.gamma.dir.path(), get.sumo.files.dir(),
-                     get.clustering.results.dir.path("gamma"), get.clustering.results.dir.path("gauss"))){
-    if (!dir.exists(dir_path)){
-      dir.create(dir_path)
-    }  
-  }
-  load.libraries()
-  generate.original.dataset()
-  
-  GAMMA.FILES <- generate.gamma.data()
-  SUMO.FILES.DIR <<- file.path(SIMULATION.FILE.DIR, "sumo_files", "gamma")
-  results <- run.sampling(fnames=GAMMA.FILES, name="gamma")
-  run.evaluation(results, outfile=file.path(SIMULATION.FILE.DIR,"gamma.tsv"))
-  
-  GAUSS.FILES <- generate.gauss.data()
-  SUMO.FILES.DIR <<- file.path(SIMULATION.FILE.DIR, "sumo_files", "gauss")
-  results <- run.sampling(fnames=GAUSS.FILES, name="gauss")
-  run.evaluation(results, outfile=file.path(SIMULATION.FILE.DIR,"gauss.tsv"))
-}
-
-
-# original dataset info
+# base data info
 nsamples =  200
 nfeatures = 400
 nclusters = 2
 nlayers = 2
 cluster_sd = 0.5
-
-# gamma_sampling
-gamma_spl_mean <-0
-gamma_spl_std <- 1.5
-gamma_spl_k <- seq(0,5,0.25)
-gamma_spl_theta <- 1
-
-# gaussian_sampling
-gauss_spl_mean <- 0
-gauss_spl_std <- seq(0,3, 0.2)
-gauss_spl_k <- 3
-gauss_spl_theta <- 1
-
-# simulation params
-RANDOM.SEED <- 42
-SIMULATION.FILE.DIR <- "noisy"
 
 # benchmark params
 # MKL.BINARY.PATH ="run_MKL_DR/application"
@@ -56,6 +18,28 @@ VARS.FNAME <- "../benchmark/set_vars.sh"
 ALGORITHM.NAMES = c('snf','spectral', 'lracluster', 'pins', 'mcca', 'nemo', 'sumo', 'sumo_spectral') #'mkl'
 ALGORITHM.DISPLAY.NAMES = as.list(c('SNF','Spectral', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'SUMO', "SUMOspectral")) #'rMKL-LPP'
 names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
-SUMO.FILES.DIR <- file.path(SIMULATION.FILE.DIR, "sumo_files")
 
-run.simulation()
+# constant layer
+gauss_mean <- 0
+gauss_std <- 1.5
+# sampled layer
+gauss_spl_std <- seq(0,4, 0.2)
+gauss_spl_mean <- 0
+
+repetitions = 1
+for (rep in 1:repetitions){
+  RANDOM.SEED <- 42
+  SIMULATION.FILE.DIR <- paste("noisy", rep, sep="_")
+  SUMO.FILES.DIR <- file.path(SIMULATION.FILE.DIR, "sumo_files")
+  prepare.simulation()
+}
+
+for (rep in 1:repetitions){
+  print(paste0("#REP: ", rep))
+  RANDOM.SEED <- rep
+  SIMULATION.FILE.DIR <- paste("noisy", rep, sep="_")
+  SUMO.FILES.DIR <- file.path(SIMULATION.FILE.DIR, "sumo_files")
+  SIM.FILES <- generate.two.gauss.layers(sampling="double_gauss")
+  results <- run.simulation(SIM.FILES, "double_gauss")
+  run.evaluation(results, outfile=file.path(SIMULATION.FILE.DIR, "double_gauss.tsv"))
+}
