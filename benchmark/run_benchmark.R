@@ -8,9 +8,10 @@ MKL.BINARY.PATH ="run_MKL_DR/application"
 MKL.ARGS.PATH = "MKL"
 MCR.ROOT = "~/MATLAB/MATLAB_Runtime/v90"
 
-# # SUMO params
+# SUMO params
 SUMO.FILES.DIR <- "sumo_files"
 SUMO.PATH <- "sumo"
+MAX.NUM.CLUSTERS <- 15
 
 # benchmark params
 DATASETS.PATH = "data"
@@ -29,6 +30,14 @@ names(OMIC.SUBSETS) = c('all')
 # run all tools
 load.libraries()
 run.benchmark()
+
+# move sumo files
+if ('sumo' %in% ALGORITHM.NAMES){
+  move.sumo.files()
+  ALGORITHM.NAMES = c(ALGORITHM.NAMES,paste0('sumo', 2:MAX.NUM.CLUSTERS))
+  ALGORITHM.DISPLAY.NAMES = as.list(c(unlist(ALGORITHM.DISPLAY.NAMES),paste0('SUMO', 2:MAX.NUM.CLUSTERS)))
+  names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
+}
 
 # calculate empirical survival and enriched clinical labels
 results <- analyze.benchmark()

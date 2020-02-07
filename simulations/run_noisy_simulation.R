@@ -7,10 +7,6 @@ nclusters = 2
 nlayers = 2
 cluster_sd = 0.5
 
-# simulation params
-RANDOM.SEED <- 42
-SIMULATION.FILE.DIR <- "noisy"
-
 # benchmark params
 # MKL.BINARY.PATH ="run_MKL_DR/application"
 # MKL.ARGS.PATH = "MKL"
@@ -22,18 +18,28 @@ VARS.FNAME <- "../benchmark/set_vars.sh"
 ALGORITHM.NAMES = c('snf','spectral', 'lracluster', 'pins', 'mcca', 'nemo', 'sumo', 'sumo_spectral') #'mkl'
 ALGORITHM.DISPLAY.NAMES = as.list(c('SNF','Spectral', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'SUMO', "SUMOspectral")) #'rMKL-LPP'
 names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
-SUMO.FILES.DIR <- file.path(SIMULATION.FILE.DIR, "sumo_files")
-
-###
-prepare.simulation()
 
 # constant layer
-gauss_mean <-0
+gauss_mean <- 0
 gauss_std <- 1.5
 # sampled layer
-gauss_spl_std <- seq(0,4, 2)
-gauss_spl_mean <-0
+gauss_spl_std <- seq(0,4, 0.2)
+gauss_spl_mean <- 0
 
-SIM.FILES <- generate.two.gauss.layers(sampling="double_gauss")
-results <- run.simulation(SIM.FILES, "double_gauss")
-run.evaluation(results, outfile=file.path(SIMULATION.FILE.DIR, "double_gauss.tsv"))
+repetitions = 1
+for (rep in 1:repetitions){
+  RANDOM.SEED <- 42
+  SIMULATION.FILE.DIR <- paste("noisy", rep, sep="_")
+  SUMO.FILES.DIR <- file.path(SIMULATION.FILE.DIR, "sumo_files")
+  prepare.simulation()
+}
+
+for (rep in 1:repetitions){
+  print(paste0("#REP: ", rep))
+  RANDOM.SEED <- rep
+  SIMULATION.FILE.DIR <- paste("noisy", rep, sep="_")
+  SUMO.FILES.DIR <- file.path(SIMULATION.FILE.DIR, "sumo_files")
+  SIM.FILES <- generate.two.gauss.layers(sampling="double_gauss")
+  results <- run.simulation(SIM.FILES, "double_gauss")
+  run.evaluation(results, outfile=file.path(SIMULATION.FILE.DIR, "double_gauss.tsv"))
+}

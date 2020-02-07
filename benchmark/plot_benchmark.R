@@ -5,8 +5,8 @@ surv <- read_csv(file.path(get.tables.dir.path(), "survival_multi_omics.csv"))
 
 ###
 
-all_surv <- read_csv(surv_fname) %>% mutate(tool=X1) %>% select(-X1) %>% gather(cancer, survival, -tool)
-all_clin <- read_csv(clin_fname) %>% mutate(tool=X1) %>% select(-X1) %>% gather(cancer, clin, -tool)
+all_surv <- surv %>% mutate(tool=X1) %>% select(-X1) %>% gather(cancer, survival, -tool)
+all_clin <- clin %>% mutate(tool=X1) %>% select(-X1) %>% gather(cancer, clin, -tool)
 
 all_clin$is_sumo <- grepl("SUMO",all_clin$tool)
 sumo_clin <- all_clin %>% filter(is_sumo == TRUE) %>% separate(tool, c("tmp", "k"), sep = "SUMO") %>% select(-tmp) %>% mutate(tool=paste0("SUMO",k))
