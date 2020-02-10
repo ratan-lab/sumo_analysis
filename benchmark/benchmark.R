@@ -1,14 +1,6 @@
 # overwrite some functions
-get.mkl.binary.path = function() {
-  return(MKL.BINARY.PATH)
-}
-
-get.mkl.arguments.path = function() {
-  return(MKL.ARGS.PATH)
-}
-
-get.mcr.root.path = function(){
-  return(MCR.ROOT)
+get.random.seed <- function(){
+  return(RANDOM.SEED)
 }
 
 get.dataset.dir.path <- function() {
@@ -63,76 +55,6 @@ load.libraries <- function() {
   system(paste("sh", get.vars.path()))
   #analysis
   library('survival')
-}
-
-run.mkl <- function(omics.list, subtype.data) {
-  start = Sys.time()
-  omics.list = log.and.normalize(omics.list, subtype.data)
-  subtype = subtype.data$name
-  omics.list = lapply(omics.list, normalize.matrix)
-  time.taken = as.numeric(Sys.time() - start, units='secs')
-  export.subtype.to.mkl(omics.list, subtype)
-  
-  start = Sys.time()
-  bin.path = get.mkl.binary.path()
-  subtype.dir = paste(get.mkl.arguments.path(), subtype, sep='/')
-  paste(subtype.dir, 'kernels', sep='/')
-  rundir <- getwd()
-  setwd(bin.path)
-  command = paste("./run_run_MKL_DR.sh", get.mcr.root.path(), paste(rundir, subtype.dir, 'kernels', sep='/'),
-                  paste(rundir, subtype.dir, 'ids', sep='/'),
-                  paste(rundir, subtype.dir, 'output', sep='/'),
-                  '9', '5')
-  command.return = system(command)
-  setwd(rundir)
-  stopifnot(command.return == 0)
-  time.taken2 = as.numeric(Sys.time() - start, units='secs')
-  clustering = get.mkl.clustering(subtype)
-  return(list(clustering=clustering, 
-              timing=time.taken + time.taken2))
-}
-
-get.mkl.clustering <- function(dir.name) {
-  folder.path = file.path(get.mkl.arguments.path(), dir.name)
-  output.path = file.path(folder.path, 'output')
-  output.files = list.files(output.path)
-  clustering = read.csv(file.path(output.path, output.files[grep('clusters', output.files)]))[,2]
-  return(clustering)
-}
-
-export.subtype.to.mkl <- function(omics.list, dir.name, run.id=NULL) {
-  folder.path = file.path(get.mkl.arguments.path(), dir.name, toString(run.id))
-
-  if (!dir.exists(folder.path)) {
-    dir.create(folder.path)
-  }
-
-  kernels.path = file.path(folder.path, 'kernels')
-
-  if (!dir.exists(kernels.path)) {
-    dir.create(kernels.path)
-  }
-  clear.dir(kernels.path)
-
-  gammas = 10 ** seq(-6, 6, by=3)
-  for (i in 1:length(omics.list)) {
-    for (j in 1:length(gammas)) {
-      datum = omics.list[[i]]
-      gamma = gammas[[j]] / (2*nrow(datum)**2)
-      mat = radial.basis(datum, gamma)
-      R.matlab::writeMat(file.path(kernels.path, paste(i, '_', j, sep='')), mat=mat)
-    }
-  }
-
-  output.path = file.path(folder.path, 'output')
-  if (!dir.exists(output.path)) {
-    dir.create(output.path)
-  }
-  clear.dir(output.path)
-
-  write.table(colnames(omics.list[[1]]), file=file.path(folder.path, 'ids'),
-              quote=F, row.names = F, col.names = F)
-
 }
 
 benchmark.omics.num.clusters <- function(benchmark.results, omics='all') {
@@ -206,7 +128,7 @@ run.benchmark <- function() {
 
     for (algorithm.name in ALGORITHM.NAMES) {
       for (j in names(OMIC.SUBSETS)) {
-        set.seed(42)
+        set.seed(get.random.seed())
         print(paste('subtype', subtype, 'running algorithm', algorithm.name, j))
         clustering.path = file.path(get.clustering.results.dir.path(),
                                     paste(subtype, algorithm.name, j, sep='_'))
@@ -234,7 +156,7 @@ run.benchmark <- function() {
 }
 
 get.empirical.clinical <- function(clustering, clinical.values, is.chisq) {
-  set.seed(42)
+  set.seed(get.random.seed())
   clustering <- as.factor(clustering)
   if (is.chisq) {
     clustering.with.clinical = cbind(clustering, clinical.values)
@@ -282,7 +204,7 @@ get.empirical.clinical <- function(clustering, clinical.values, is.chisq) {
 }
 
 get.empirical.surv <- function(clustering, subtype) {
-  set.seed(42)
+  set.seed(get.random.seed())
   surv.ret = check.survival(clustering, subtype)
   orig.chisq = surv.ret$chisq
   orig.pvalue = get.logrank.pvalue(surv.ret)
