@@ -8,15 +8,12 @@ nlayers = 2
 cluster_sd = 0.5
 
 # benchmark params
-# MKL.BINARY.PATH ="run_MKL_DR/application"
-# MKL.ARGS.PATH = "MKL"
-# MCR.ROOT = "~/MATLAB/MATLAB_Runtime/v90"
 MC.CORES <- 4
 SUMO.PATH <- "sumo"
 GENERATE.DATA.SCRIPT <- "generate_data.py"
 VARS.FNAME <- "../benchmark/set_vars.sh"
-ALGORITHM.NAMES = c('snf','spectral', 'lracluster', 'pins', 'mcca', 'nemo', 'sumo', 'sumo_spectral') #'mkl'
-ALGORITHM.DISPLAY.NAMES = as.list(c('SNF','Spectral', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'SUMO', "SUMOspectral")) #'rMKL-LPP'
+ALGORITHM.NAMES = c('snf', 'lracluster', 'pins', 'mcca', 'nemo', 'sumo')
+ALGORITHM.DISPLAY.NAMES = as.list(c('SNF', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'SUMO'))
 names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
 
 # constant layer
@@ -43,3 +40,4 @@ for (rep in 1:repetitions){
   results <- run.simulation(SIM.FILES, "double_gauss")
   run.evaluation(results, outfile=file.path(SIMULATION.FILE.DIR, "double_gauss.tsv"))
 }
+  

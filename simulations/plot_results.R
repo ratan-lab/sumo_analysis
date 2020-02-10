@@ -12,13 +12,13 @@ data <- read_tsv("double_gauss.tsv")
 data <- data %>% separate(subtype, c("a", "b", "var")) %>% mutate(var = map_vals(var)) %>% select(-a, -b)
 dataARI <- data %>% filter(metric == "ARI")
 
-dataARI <- dataARI %>% group_by(algoritm, var) %>% 
+dataARI <- dataARI %>% group_by(tool, var) %>% 
   summarise(medianARI= median(val), minARI=min(val), maxARI=max(val)) %>% full_join(dataARI)
 
 dataARI %>%
   ggplot() + 
-    geom_ribbon(aes(x = var, ymin = minARI, ymax = maxARI, fill=algoritm), alpha=0.3) +
-    geom_line(aes(x=var,y=medianARI, group=algoritm, color=algoritm), size=1) + facet_wrap(algoritm~.) +
+    geom_ribbon(aes(x = var, ymin = minARI, ymax = maxARI, fill=tool), alpha=0.3) +
+    geom_line(aes(x=var,y=medianARI, group=tool, color=tool), size=1) + facet_wrap(tool~.) +
     theme_bw() + ylab("median ARI") + xlab("σ") + 
     theme(legend.position = "bottom", axis.text = element_text(size=12), strip.text.x = element_text(size = 12, face="bold"), 
           axis.title = element_text(size=12), legend.text=element_text(size=12), legend.title = element_blank()) +
@@ -26,7 +26,7 @@ dataARI %>%
 
 dataARI %>%
   ggplot() + 
-  geom_line(aes(x=var,y=medianARI, group=algoritm, color=algoritm), size=1) + theme_bw() + ylab("median ARI") + xlab("σ") + 
+  geom_line(aes(x=var,y=medianARI, group=tool, color=tool), size=1.5) + theme_bw() + ylab("median ARI") + xlab("σ") + 
   theme(legend.position = "bottom", axis.text = element_text(size=12), strip.text.x = element_text(size = 12, face="bold"), 
         axis.title = element_text(size=12), legend.text=element_text(size=12), legend.title = element_blank()) +
   scale_color_npg()

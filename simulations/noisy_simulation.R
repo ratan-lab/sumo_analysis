@@ -82,17 +82,6 @@ run.snf <- function(omics.list, subtype) {
   return(list(clustering=clustering, timing=time.taken))
 }
 
-run.spectral <- function(omics.list, subtype) {
-  start = Sys.time()
-  omics.list = lapply(omics.list, normalize.matrix)  
-  concat.omics = do.call(rbind, omics.list)
-  similarity.data = affinityMatrix(SNFtool::dist2(as.matrix(t(concat.omics)),as.matrix(t(concat.omics))), 20, 0.5)
-  num.clusters = nclusters
-  clustering = spectralClustering(similarity.data, num.clusters)
-  time.taken = as.numeric(Sys.time() - start, units='secs')
-  return(list(clustering=clustering, timing=time.taken))
-}
-
 run.pins <- function(omics.list, subtype) {
   start = Sys.time()
   omics.transposed = lapply(omics.list, t)
@@ -100,30 +89,6 @@ run.pins <- function(omics.list, subtype) {
   clustering = pins.ret$cluster1
   time.taken = as.numeric(Sys.time() - start, units='secs')
   return(list(clustering=clustering, timing=time.taken))
-}
-
-run.mkl <- function(omics.list, subtype) {
-  start = Sys.time()
-  omics.list = lapply(omics.list, normalize.matrix)
-  time.taken = as.numeric(Sys.time() - start, units='secs')
-  export.subtype.to.mkl(omics.list, subtype)
-  
-  start = Sys.time()
-  bin.path = get.mkl.binary.path()
-  subtype.dir = paste(get.mkl.arguments.path(), subtype, sep='/')
-  paste(subtype.dir, 'kernels', sep='/')
-  rundir <- getwd()
-  setwd(bin.path)
-  command = paste("./run_run_MKL_DR.sh", get.mcr.root.path(), paste(rundir, subtype.dir, 'kernels', sep='/'),
-                  paste(rundir, subtype.dir, 'ids', sep='/'),
-                  paste(rundir, subtype.dir, 'output', sep='/'),
-                  '9', '5')
-  command.return = system(command)
-  setwd(rundir)
-  stopifnot(command.return == 0)
-  time.taken2 = as.numeric(Sys.time() - start, units='secs')
-  clustering = get.mkl.clustering(subtype)
-  return(list(clustering=clustering, timing=time.taken + time.taken2))
 }
 
 run.mcca <- function(omics.list, subtype, known.num.clusters=nclusters, penalty=NULL, rep.omic=1) {# 2D noisy simulation
@@ -203,42 +168,6 @@ run.sumo <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.m
   return(list(clustering=clustering, timing=time.taken))
 }
 
-run.sumo_spectral <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
-  start = Sys.time()
-  if (!dir.exists(file_dir)){
-    dir.create(file_dir)
-  }
-  prepare_files <- c()
-  sampling <- strsplit(subtype, "_")[[1]][1]
-  
-  for (i in 1:length(omics.list)){
-    if (attr(omics.list[[i]], "name") == sampling){
-      fname <- file.path(get.sumo.files.dir(), paste0(subtype, "_std.tsv"))
-      omic <- t(scale(t(as.matrix(omics.list[[i]]))))
-      omics.list[[i]] <- omic
-      write.table(omic, fname, sep="\t", row.names = T, col.names = T)
-      prepare_files <- c(prepare_files, fname)
-    } else {
-      fname <- paste0(strsplit(attr(omics.list[[i]], "fname"), "\\.")[[1]][1], "_std.tsv" )
-      if (!file.exists(fname)){
-        omic <- t(scale(t(as.matrix(omics.list[[i]]))))
-        omics.list[[i]] <- omic
-        write.table(omic, fname, sep="\t", row.names = T, col.names = T)
-      }
-      prepare_files <- c(prepare_files, fname)
-    }
-  }
-  
-  outfile = file.path(file_dir, paste0("prepared.", subtype, ".npz"))
-  sumo.prepare(omics.list, subtype.data, prepare_files, outfile=outfile)
-  stopifnot(file.exists(outfile))
-  
-  outdir = file.path(file_dir, subtype)
-  clustering = sumo.clustering_spectral(num.clusters, outfile, outdir, mc.cores)
-  time.taken = as.numeric(Sys.time() - start, units='secs')
-  return(list(clustering=clustering, timing=time.taken))
-}
-
 sumo.clustering <- function(k, fname, outdir, mc.cores = get.mc.cores()){
   log <- paste0(paste(strsplit(fname, "\\.")[[1]][1:2], collapse = '.'), ".log")
   command <- paste(get.sumo.path(), "run","-t", mc.cores,"-log DEBUG", "-logfile", log, fname, k, outdir)
@@ -256,26 +185,6 @@ sumo.clustering <- function(k, fname, outdir, mc.cores = get.mc.cores()){
   names(clustering) <- unlist(clusters[,1])
   return(clustering)
 }
-
-
-sumo.clustering_spectral <- function(k, fname, outdir, mc.cores = get.mc.cores()){
-  log <- paste0(paste(strsplit(fname, "\\.")[[1]][1:2], collapse = '.'), ".log")
-  command <- paste(get.sumo.path(), "run","-method","spectral","-t", mc.cores,"-log DEBUG", "-logfile", log, fname, k, outdir)
-  print(command)
-  command.return = system(command)
-  stopifnot(command.return == 0)
-  
-  #TODO select the best results and point to them below
-  results_file <- file.path(outdir, paste0("k",k), "sumo_results.npz")
-  np <- import("numpy")
-  npz <- np$load(results_file, allow_pickle = T)
-  clusters <- npz$f[["clusters"]]
-  
-  clustering <- unlist(clusters[,2])
-  names(clustering) <- unlist(clusters[,1])
-  return(clustering)
-}
-
 
 run.sampling <- function(fnames, name) {
   result_files <- list()
@@ -330,7 +239,7 @@ run.evaluation <- function(results, outfile){
       metrics <- c(metrics, metric)
     }
   }
-  data <- data.frame(algoritm=algorithms, subtype=subtypes, metric = metrics, val = vals)
+  data <- data.frame(tool=algorithms, subtype=subtypes, metric = metrics, val = vals)
   write.table(data, file=outfile, sep = "\t", row.names = F, col.names = T)
 }
 
