@@ -26,7 +26,7 @@ gauss_std <- 1.5
 gauss_spl_std <- seq(0,4, 0.2)
 gauss_spl_mean <- 0
 
-repetitions = 1
+repetitions = 10
 for (rep in 1:repetitions){
   RANDOM.SEED <- 42
   SIMULATION.FILE.DIR <- paste("noisy", rep, sep="_")

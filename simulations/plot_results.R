@@ -1,5 +1,7 @@
 library(tidyverse)
-setwd("~/Desktop/sumo_analysis/simulations/noisy")
+library(ggsci)
+
+gauss_spl_std <- seq(0,4, 0.2)
 
 map_vals <- function(val){
   RANGE <- gauss_spl_std
@@ -7,12 +9,24 @@ map_vals <- function(val){
 }
 
 data <- read_tsv("double_gauss.tsv")
-data <- data %>% separate(subtype, c("sampling", "tmp", "var")) %>% mutate(var = map_vals(var), sampling= paste(sampling, tmp, sep="_")) %>% select(-tmp)
-data %>% ggplot() + geom_line(aes(x=var,y=val, group=algoritm, color=algoritm)) + 
-  facet_wrap(metric~.) + theme(legend.position = "bottom") + ylab("metric value") + xlab("k") + 
-  ggtitle(paste0('Gauss(mean=',gauss_spl_mean,') & Gauss(mean=',gauss_mean,', sd=',gauss_std,')'))
+data <- data %>% separate(subtype, c("a", "b", "var")) %>% mutate(var = map_vals(var)) %>% select(-a, -b)
+dataARI <- data %>% filter(metric == "ARI")
 
-data %>% filter(metric == 'ARI') %>% ggplot() + geom_line(aes(x=var,y=val, group=algoritm, color=algoritm)) + 
-  facet_wrap(algoritm~., ncol=4) + theme(legend.position = "null") + ylab("ARI") + xlab("k") + 
-  ggtitle(paste0('Gauss(mean=',gauss_spl_mean,') & Gauss(mean=',gauss_mean,', sd=',gauss_std,')'))
+dataARI <- dataARI %>% group_by(algoritm, var) %>% 
+  summarise(medianARI= median(val), minARI=min(val), maxARI=max(val)) %>% full_join(dataARI)
 
+dataARI %>%
+  ggplot() + 
+    geom_ribbon(aes(x = var, ymin = minARI, ymax = maxARI, fill=algoritm), alpha=0.3) +
+    geom_line(aes(x=var,y=medianARI, group=algoritm, color=algoritm), size=1) + facet_wrap(algoritm~.) +
+    theme_bw() + ylab("median ARI") + xlab("σ") + 
+    theme(legend.position = "bottom", axis.text = element_text(size=12), strip.text.x = element_text(size = 12, face="bold"), 
+          axis.title = element_text(size=12), legend.text=element_text(size=12), legend.title = element_blank()) +
+    scale_color_npg() + scale_fill_npg()
+
+dataARI %>%
+  ggplot() + 
+  geom_line(aes(x=var,y=medianARI, group=algoritm, color=algoritm), size=1) + theme_bw() + ylab("median ARI") + xlab("σ") + 
+  theme(legend.position = "bottom", axis.text = element_text(size=12), strip.text.x = element_text(size = 12, face="bold"), 
+        axis.title = element_text(size=12), legend.text=element_text(size=12), legend.title = element_blank()) +
+  scale_color_npg()
