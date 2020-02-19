@@ -21,10 +21,10 @@ sumo_data
 
 sumo_data %>%
   mutate(tool="SUMO") %>%
-  ggplot() + geom_point(aes(x=survival,y=clin,color=as.factor(k)), size=3) + facet_wrap(cancer~., scales = "free", ncol=4) + 
+  ggplot() + geom_point(aes(x=survival,y=clin,color=as.factor(k)), size=3) + facet_wrap(cancer~., scales = "free", ncol=4) +
   theme_bw() + labs(color="k") + geom_vline(xintercept = -log10(0.05), color="red") + ylab('# enriched clinical parameters') +
   xlab("-log10(logrank pvalue)") + theme(legend.position = "bottom", axis.text = element_text(size=12),
-        strip.text.x = element_text(size = 12, face="bold"), axis.title = element_text(size=12), 
+        strip.text.x = element_text(size = 12, face="bold"), axis.title = element_text(size=12),
         legend.text=element_text(size=12))
 
 sumo_plot <- last_plot()
@@ -42,10 +42,10 @@ surv_data <- all_surv %>% filter(is_sumo == FALSE)
 data <- clin_data %>% full_join(surv_data) %>% full_join(selected_sumo %>% select(-k))
 data
 data %>%
-  ggplot() + geom_point(aes(x=survival, y=clin, color=tool, shape= is_sumo), size = 3) + 
-  facet_wrap(cancer~., scales="free", ncol=4) + xlab("-log10(logrank pvalue)") + ylab("# enriched clinical parameters") + 
+  ggplot() + geom_point(aes(x=survival, y=clin, color=tool, shape= is_sumo), size = 3) +
+  facet_wrap(cancer~., scales="free", ncol=4) + xlab("-log10(logrank pvalue)") + ylab("# enriched clinical parameters") +
   labs(color="") + theme_bw() + geom_vline(xintercept = -log10(0.05), color="red") + scale_shape(guide="none") +
-  theme(legend.position = "bottom", axis.text = element_text(size=12), strip.text.x = element_text(size = 12, face="bold"), 
+  theme(legend.position = "bottom", axis.text = element_text(size=12), strip.text.x = element_text(size = 12, face="bold"),
         axis.title = element_text(size=12), legend.text=element_text(size=12)) + scale_color_npg()
 
 results_plot <- last_plot()
