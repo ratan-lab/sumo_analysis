@@ -23,7 +23,7 @@ gauss_mean_2 <- 1
 gauss_std_2 <- 1
 
 repetitions = 10
-fraq <- seq(0.1,1,0.1)
+fraq <- seq(0,0.9,0.1)
 
 all_results <- list()
 for (rep in 1:repetitions){

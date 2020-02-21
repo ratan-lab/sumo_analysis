@@ -9,23 +9,23 @@ dataARI%>%
   summarize(median=median(val), min=min(val), max=max(val)) %>%
   full_join(dataARI) %>%
   mutate(subtype=subtype*100) %>%
-  ggplot() + geom_line(aes(x=as.factor(subtype), y=median, group=tool, color=tool), size=1) + 
+  ggplot() + geom_line(aes(x=as.factor(subtype), y=median, group=tool, color=tool), size=1.5) + 
   # geom_errorbar(aes(x=as.factor(subtype),y=median, ymin=min, ymax=max, group=tool,color=tool), alpha=0.05, size= 1) +
   theme_bw() + theme(legend.position = "bottom", axis.text = element_text(size=12), axis.title = element_text(size=12),
                      legend.text=element_text(size=12), strip.text.x = element_text(size = 12, face="bold")) + 
-  ylab("ARI") + xlab("percent of samples removed from both layers") + labs(color="") + scale_color_npg()
+  ylab("median ARI") + xlab("percent of samples removed from both layers") + labs(color="") + scale_color_npg()
 
 dataARI%>%
   group_by(tool, metric, subtype) %>%
   summarize(median=median(val), min=min(val), max=max(val)) %>%
   full_join(dataARI) %>%
   mutate(subtype=subtype*100) %>%
-  ggplot() + geom_line(aes(x=as.factor(subtype), y=median, group=tool, color=tool), size=1) + 
-  geom_errorbar(aes(x=as.factor(subtype),y=median, ymin=min, ymax=max, group=tool,color=tool), alpha=0.1, size= 1) +
+  ggplot() + geom_line(aes(x=as.factor(subtype), y=median, group=tool, color=tool), size=1) +
+  geom_ribbon(aes(x=as.factor(subtype), ymin=min, ymax=max, group=tool, fill=tool), alpha=0.3, show.legend = F) +
   facet_wrap(tool~.) +
   theme_bw() + theme(legend.position = "bottom", axis.text = element_text(size=12), axis.title = element_text(size=12),
-                     legend.text=element_text(size=12), strip.text.x = element_text(size = 12, face="bold")) + 
-  ylab("ARI") + xlab("percent of samples removed from both layers") + labs(color="") + scale_color_npg()
+                     legend.text=element_text(size=12), strip.text.x = element_text(size = 12, face="bold")) +
+  ylab("median ARI") + xlab("percent of samples removed from both layers") + labs(color="") + scale_color_npg() + scale_fill_npg()
 
 ####
 library(Rtsne)
@@ -35,11 +35,6 @@ data1 <- read.table("subsampling_1/layer1.tsv")
 data2 <- read.table("subsampling_1/layer2.tsv")
 labels <- read_tsv("subsampling_1/base_labels.tsv")
 stopifnot(all(colnames(data1) == labels$sample) & all(colnames(data1) == colnames(data2)))
-
-gauss_mean_1 <- 0
-gauss_std_1 <- 1.5
-gauss_mean_2 <- 1
-gauss_std_2 <- 1
 
 # first layer 
 res <- Rtsne(t(as.matrix(data1)))

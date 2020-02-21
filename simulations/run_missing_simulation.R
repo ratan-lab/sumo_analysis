@@ -17,15 +17,13 @@ ALGORITHM.DISPLAY.NAMES = as.list(c('NEMO', 'SUMO'))
 names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
 
 # noise in layers
-gauss_mean_1 <- 0
-gauss_std_1 <- 1.5
-gauss_mean_2 <- 1
-gauss_std_2 <- 1
+gauss_mean_1 <- 1
+gauss_std_1 <- 1
+gauss_mean_2 <- 0
+gauss_std_2 <- 1.5
 
-# repetitions = 10
-repetitions = 2
-# fraq <- seq(0,0.9,0.1) #fraction of samples removed from first layer
-fraq <- seq(0,0.9,0.9) 
+repetitions = 10
+fraq <- seq(0,0.9,0.1) #fraction of samples removed from first layer
 
 all_results <- list()
 for (rep in 1:repetitions){
@@ -55,4 +53,5 @@ for (rep in 1:repetitions){
   }
 }
 
-  run.evaluation(all_results, outfile="missing.tsv")
+run.evaluation(all_results, outfile="missing.tsv")
+print('DONE')
