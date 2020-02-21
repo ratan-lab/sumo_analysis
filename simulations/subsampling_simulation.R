@@ -161,7 +161,7 @@ generate.subsampled.data <- function(fraction, layer1, layer2){
   stopifnot(all(colnames(data1) %in% colnames(data2)))
   
   set.seed(RANDOM.SEED)
-  samples <- sample(colnames(data1), size = round(fraction*dim(data1)[2]))
+  samples <- sample(colnames(data1), size = round((1-fraction)*dim(data1)[2]))
   subsampled1 <- data1[,colnames(data1) %in% samples] 
   fname1 <- file.path(SIMULATION.FILE.DIR, paste0("layer1_", fraction, ".tsv"))
   write.table(subsampled1, fname1)
@@ -194,7 +194,7 @@ run.sampling <- function(fnames, name) {
   result_files <- list()
   subtype = name
   subtype.raw.data = get.raw.data(fnames)
-  stopifnot(all(colnames(subtype.raw.data[[1]]) == colnames(subtype.raw.data[[2]])))
+  # stopifnot(all(colnames(subtype.raw.data[[1]]) == colnames(subtype.raw.data[[2]])))
   samples <- colnames(subtype.raw.data[[1]])
   for (algorithm.name in ALGORITHM.NAMES) {
     set.seed(RANDOM.SEED)

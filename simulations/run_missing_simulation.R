@@ -1,4 +1,4 @@
-source("subsampling_simulation.R")
+source("missing_simulation.R")
 
 # base data info
 nsamples =  200
@@ -12,8 +12,8 @@ MC.CORES <- 4
 SUMO.PATH <- "sumo"
 GENERATE.DATA.SCRIPT <- "generate_data.py"
 VARS.FNAME <- "../benchmark/set_vars.sh"
-ALGORITHM.NAMES = c('snf', 'lracluster', 'pins', 'mcca', 'nemo', 'sumo')
-ALGORITHM.DISPLAY.NAMES = as.list(c('SNF', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'SUMO'))
+ALGORITHM.NAMES = c( 'nemo', 'sumo')
+ALGORITHM.DISPLAY.NAMES = as.list(c('NEMO', 'SUMO'))
 names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
 
 # noise in layers
@@ -22,14 +22,16 @@ gauss_std_1 <- 1.5
 gauss_mean_2 <- 1
 gauss_std_2 <- 1
 
-repetitions = 10
-fraq <- seq(0.1,1,0.1)
+# repetitions = 10
+repetitions = 2
+# fraq <- seq(0,0.9,0.1) #fraction of samples removed from first layer
+fraq <- seq(0,0.9,0.9) 
 
 all_results <- list()
 for (rep in 1:repetitions){
   # prepare simulation
   RANDOM.SEED <- 42
-  SIMULATION.FILE.DIR <- paste("subsampling", rep, sep="_")
+  SIMULATION.FILE.DIR <- paste("missing", rep, sep="_")
   prepare.simulation()
   
   # noisy data
@@ -44,13 +46,13 @@ for (rep in 1:repetitions){
       stop(paste("Cannot remove",fr*100,"% of samples!"))
     }
     # subsample data
-    print(paste0("#REP: ", rep, " (", fr*100, "% samples removed from both layers)"))
+    print(paste0("#REP: ", rep, " (", fr*100, "% samples removed from first layer)"))
     SUMO.FILES.DIR <- file.path(SIMULATION.FILE.DIR, paste0("sumo_files_", fr))
-    SIM.FILES <- generate.subsampled.data(fraction=fr, layer1=layer1, layer2=layer2)
+    SIM.FILES <- generate.missing.data(fraction=fr, layer1=layer1, layer2=layer2)
     # run simulation
     results <- run.simulation(SIM.FILES, sampling=paste0(fr))
     all_results <- append(all_results, results)
   }
 }
 
-run.evaluation(all_results, outfile="subsampling.tsv")
+  run.evaluation(all_results, outfile="missing.tsv")
