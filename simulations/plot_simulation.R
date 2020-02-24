@@ -1,7 +1,14 @@
 library(tidyverse)
 library(ggsci)
 
-data <- read_tsv('subsampling/subsampling.tsv')
+# dir_name <- 'subsampling'
+# x_axis_label <- "percent of samples removed from both layers"
+
+dir_name <- 'missing'
+x_axis_label <- "percent of missing samples"
+
+fname <- file.path(dir_name, paste0(dir_name, ".tsv"))
+data <- read_tsv(fname)
 dataARI <- data %>% filter(metric == "ARI") 
 
 dataARI%>%
@@ -13,7 +20,7 @@ dataARI%>%
   # geom_errorbar(aes(x=as.factor(fraction),y=median, ymin=min, ymax=max, group=tool,color=tool), alpha=0.05, size= 1) +
   theme_bw() + theme(legend.position = "bottom", axis.text = element_text(size=12), axis.title = element_text(size=12),
                      legend.text=element_text(size=12), strip.text.x = element_text(size = 12, face="bold")) + 
-  ylab("median ARI") + xlab("percent of samples removed from both layers") + labs(color="") + scale_color_npg()
+  ylab("median ARI") + xlab(x_axis_label) + labs(color="") + scale_color_npg()
 
 dataARI%>%
   group_by(tool, metric, fraction) %>%
@@ -25,15 +32,15 @@ dataARI%>%
   facet_wrap(tool~.) +
   theme_bw() + theme(legend.position = "bottom", axis.text = element_text(size=12), axis.title = element_text(size=12),
                      legend.text=element_text(size=12), strip.text.x = element_text(size = 12, face="bold")) +
-  ylab("median ARI") + xlab("percent of samples removed from both layers") + labs(color="") + scale_color_npg() + scale_fill_npg()
+  ylab("median ARI") + xlab(x_axis_label) + labs(color="") + scale_color_npg() + scale_fill_npg()
 
 ####
 library(Rtsne)
 library(ggpubr)
 
-data1 <- read.table("subsampling/layer1.tsv")
-data2 <- read.table("subsampling/layer2.tsv")
-labels <- read_tsv("subsampling/base_labels.tsv")
+data1 <- read.table(file.path(dir_name, "layer1.tsv"))
+data2 <- read.table(file.path(dir_name, "layer2.tsv"))
+labels <- read_tsv(file.path(dir_name, "base_labels.tsv"))
 stopifnot(all(colnames(data1) == labels$sample) & all(colnames(data1) == colnames(data2)))
 
 # first layer 
