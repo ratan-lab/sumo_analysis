@@ -26,7 +26,7 @@ names(OMIC.SUBSETS) = c('all')
 # run all tools
 load.libraries()
 run.benchmark()
-
+  
 # move sumo files
 if ('sumo' %in% ALGORITHM.NAMES){
   move.sumo.files()
@@ -34,7 +34,7 @@ if ('sumo' %in% ALGORITHM.NAMES){
   ALGORITHM.DISPLAY.NAMES = as.list(c(unlist(ALGORITHM.DISPLAY.NAMES),paste0('SUMO', 2:MAX.NUM.CLUSTERS)))
   names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
 }
-
+  
 # calculate empirical survival and enriched clinical labels
 results <- analyze.benchmark()
 perform.all.analyses(results)
