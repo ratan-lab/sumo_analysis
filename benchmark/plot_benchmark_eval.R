@@ -31,11 +31,11 @@ data %>%
   theme_bw() + labs(color="tool") + geom_vline(xintercept = -log10(0.05), color="red") + ylab('# enriched clinical parameters') +
   xlab("-log10(logrank pvalue)") + theme(legend.position = "bottom", axis.text = element_text(size=12),
                                          strip.text.x = element_text(size = 12, face="bold"), axis.title = element_text(size=12), 
-                                         legend.text=element_text(size=12))
+                                         legend.text=element_text(size=12)) +scale_color_npg()
 
 data %>%
   ggplot() + geom_point(aes(x=survival,y=clin,color=as.factor(tool)), size=3) + facet_wrap(tool~.) + 
   theme_bw() + labs(color="tool") + geom_vline(xintercept = -log10(0.05), color="red") + ylab('# enriched clinical parameters') +
   xlab("-log10(logrank pvalue)") + theme(legend.position = "null", axis.text = element_text(size=12),
                                          strip.text.x = element_text(size = 12, face="bold"), axis.title = element_text(size=12), 
-                                         legend.text=element_text(size=12))
+                                         legend.text=element_text(size=12)) +scale_color_npg()
