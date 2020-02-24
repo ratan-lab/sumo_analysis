@@ -130,43 +130,43 @@ sumo.clustering <- function(k, fname, outdir, mc.cores = get.mc.cores()){
   return(clustering)
 }
 
-prepare.simulation <- function(){
+prepare.simulation <- function(rseed){
   if (!dir.exists(SIMULATION.FILE.DIR)){
     dir.create(SIMULATION.FILE.DIR)
   }
   load.libraries()
-  generate.original.dataset()
+  generate.original.dataset(rseed)
 }
 
-generate.original.dataset <- function(){
+generate.original.dataset <- function(rseed){
   # create base data and base labels
-  cmd = paste("python3", get.generate.data.script(), "-rstate", RANDOM.SEED ,"-sd",cluster_sd, nsamples, nfeatures, nclusters, SIMULATION.FILE.DIR)
+  cmd = paste("python3", get.generate.data.script(), "-rstate", rseed ,"-sd",cluster_sd, nsamples, nfeatures, nclusters, SIMULATION.FILE.DIR)
   cmd.return = system(cmd, intern = F)
   stopifnot(cmd.return == 0)
 }
 
 generate.noisy.data <- function(mean, sd, outfile){
   base_data <- read.table(get.base.data.path())
-  set.seed(RANDOM.SEED)
 
   data <- base_data +  matrix(rnorm(n=nsamples*nfeatures, mean = mean, sd = sd), ncol=nsamples, nrow=nfeatures)
   write.table(data, file=outfile, sep = "\t", row.names = T, col.names = T)
   print(paste("Created:", outfile))
 }
 
-generate.subsampled.data <- function(fraction, layer1, layer2){
+generate.subsampled.data <- function(fraction, layer1, layer2, outdir){
   stopifnot(file.exists(layer1) & file.exists(layer2))
   data1 <- read.table(layer1)
   data2 <- read.table(layer2)
   stopifnot(all(colnames(data1) %in% colnames(data2)))
-  
-  set.seed(RANDOM.SEED)
+  if (! dir.exists(outdir)){
+    dir.create(outdir)
+  }
   samples <- sample(colnames(data1), size = round((1-fraction)*dim(data1)[2]))
   subsampled1 <- data1[,colnames(data1) %in% samples] 
-  fname1 <- file.path(SIMULATION.FILE.DIR, paste0("layer1_", fraction, ".tsv"))
+  fname1 <- file.path(outdir, paste0("layer1_", fraction, ".tsv"))
   write.table(subsampled1, fname1)
   subsampled2 <- data2[,colnames(data2) %in% samples] 
-  fname2 <- file.path(SIMULATION.FILE.DIR, paste0("layer2_", fraction, ".tsv"))
+  fname2 <- file.path(outdir, paste0("layer2_", fraction, ".tsv"))
   write.table(subsampled2, fname2)
   return(list(list(layer1=fname1, layer2=fname2)))
 }
@@ -194,13 +194,12 @@ run.sampling <- function(fnames, name) {
   result_files <- list()
   subtype = name
   subtype.raw.data = get.raw.data(fnames)
-  # stopifnot(all(colnames(subtype.raw.data[[1]]) == colnames(subtype.raw.data[[2]])))
   samples <- colnames(subtype.raw.data[[1]])
   for (algorithm.name in ALGORITHM.NAMES) {
-    set.seed(RANDOM.SEED)
     print(paste('data', subtype, 'running algorithm', algorithm.name))
-    clustering.path = file.path(get.clustering.results.dir.path(), paste0(subtype, "_", algorithm.name, ".tsv"))
-    timing.path = file.path(get.clustering.results.dir.path(), paste0(subtype, "_",algorithm.name, '_timing'))
+    result_dir <- get.clustering.results.dir.path()
+    clustering.path = file.path(result_dir, paste0(subtype, "_", algorithm.name, ".tsv"))
+    timing.path = file.path(result_dir, paste0(subtype, "_",algorithm.name, '_timing'))
     if (!file.exists(clustering.path)) {
       algorithm.func.name = paste0('run.', algorithm.name)
       algorithm.func = get(algorithm.func.name)
@@ -223,7 +222,7 @@ run.sampling <- function(fnames, name) {
 
 run.evaluation <- function(results, outfile){
   algorithms <- c()
-  subtypes <- c()
+  fractions <- c()
   vals <- c()
   metrics <- c()
   for (r in results){
@@ -234,11 +233,11 @@ run.evaluation <- function(results, outfile){
       line <- cmd.return[grepl(metric, cmd.return)]
       val <- strsplit(line,'\t')[[1]][2]
       algorithms <- c(algorithms, r$algorithm)
-      subtypes <- c(subtypes, r$subtype)
+      fractions <- c(fractions, r$subtype)
       vals <- c(vals, val)
       metrics <- c(metrics, metric)
     }
   }
-  data <- data.frame(tool=algorithms, subtype=subtypes, metric = metrics, val = vals)
+  data <- data.frame(tool=algorithms, fraction=fractions, metric = metrics, val = vals)
   write.table(data, file=outfile, sep = "\t", row.names = F, col.names = T)
 }

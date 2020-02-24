@@ -1,27 +1,27 @@
 library(tidyverse)
 library(ggsci)
 
-data <- read_tsv('subsampling.tsv')
+data <- read_tsv('subsampling/subsampling.tsv')
 dataARI <- data %>% filter(metric == "ARI") 
 
 dataARI%>%
-  group_by(tool, metric, subtype) %>%
+  group_by(tool, metric, fraction) %>%
   summarize(median=median(val), min=min(val), max=max(val)) %>%
   full_join(dataARI) %>%
-  mutate(subtype=subtype*100) %>%
-  ggplot() + geom_line(aes(x=as.factor(subtype), y=median, group=tool, color=tool), size=1.5) + 
-  # geom_errorbar(aes(x=as.factor(subtype),y=median, ymin=min, ymax=max, group=tool,color=tool), alpha=0.05, size= 1) +
+  mutate(fraction=fraction*100) %>%
+  ggplot() + geom_line(aes(x=as.factor(fraction), y=median, group=tool, color=tool), size=1.5) + 
+  # geom_errorbar(aes(x=as.factor(fraction),y=median, ymin=min, ymax=max, group=tool,color=tool), alpha=0.05, size= 1) +
   theme_bw() + theme(legend.position = "bottom", axis.text = element_text(size=12), axis.title = element_text(size=12),
                      legend.text=element_text(size=12), strip.text.x = element_text(size = 12, face="bold")) + 
   ylab("median ARI") + xlab("percent of samples removed from both layers") + labs(color="") + scale_color_npg()
 
 dataARI%>%
-  group_by(tool, metric, subtype) %>%
+  group_by(tool, metric, fraction) %>%
   summarize(median=median(val), min=min(val), max=max(val)) %>%
   full_join(dataARI) %>%
-  mutate(subtype=subtype*100) %>%
-  ggplot() + geom_line(aes(x=as.factor(subtype), y=median, group=tool, color=tool), size=1) +
-  geom_ribbon(aes(x=as.factor(subtype), ymin=min, ymax=max, group=tool, fill=tool), alpha=0.3, show.legend = F) +
+  mutate(fraction=fraction*100) %>%
+  ggplot() + geom_line(aes(x=as.factor(fraction), y=median, group=tool, color=tool), size=1) +
+  geom_ribbon(aes(x=as.factor(fraction), ymin=min, ymax=max, group=tool, fill=tool), alpha=0.3, show.legend = F) +
   facet_wrap(tool~.) +
   theme_bw() + theme(legend.position = "bottom", axis.text = element_text(size=12), axis.title = element_text(size=12),
                      legend.text=element_text(size=12), strip.text.x = element_text(size = 12, face="bold")) +
@@ -31,9 +31,9 @@ dataARI%>%
 library(Rtsne)
 library(ggpubr)
 
-data1 <- read.table("subsampling_1/layer1.tsv")
-data2 <- read.table("subsampling_1/layer2.tsv")
-labels <- read_tsv("subsampling_1/base_labels.tsv")
+data1 <- read.table("subsampling/layer1.tsv")
+data2 <- read.table("subsampling/layer2.tsv")
+labels <- read_tsv("subsampling/base_labels.tsv")
 stopifnot(all(colnames(data1) == labels$sample) & all(colnames(data1) == colnames(data2)))
 
 # first layer 
