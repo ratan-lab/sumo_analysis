@@ -9,7 +9,6 @@ generate.missing.data <- function(fraction, layer1, layer2, outdir){
     dir.create(outdir)
   }
   # remove samples from first layer
-  set.seed(RANDOM.SEED)
   samples <- sample(colnames(data1), size = round((1 -fraction)*dim(data1)[2]))
   subsampled1 <- data1[,colnames(data1) %in% samples] 
   fname1 <- file.path(outdir, paste0("layer1_", fraction, ".tsv"))
