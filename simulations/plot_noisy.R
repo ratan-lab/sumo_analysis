@@ -8,7 +8,7 @@ map_vals <- function(val){
   return(RANGE[as.integer(val)])
 }
 
-data <- read_tsv("double_gauss.tsv")
+data <- read_tsv("noisy/double_gauss.tsv")
 data <- data %>% separate(subtype, c("a", "b", "var")) %>% mutate(var = map_vals(var)) %>% select(-a, -b)
 dataARI <- data %>% filter(metric == "ARI")
 

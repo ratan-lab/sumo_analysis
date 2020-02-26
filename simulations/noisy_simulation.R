@@ -4,11 +4,11 @@ source('../benchmark/nemo_benchmark/NEMO.R')
 source('../benchmark/SUMO.R')
 
 get.base.data.path <- function(){
-  return(file.path(SIMULATION.FILE.DIR, "base_data.tsv"))
+  return(file.path(MAIN.SIMULATION.FILE.DIR, "base_data.tsv"))
 }
 
 get.base.labels.path <- function(){
-  return(file.path(SIMULATION.FILE.DIR, "base_labels.tsv"))
+  return(file.path(MAIN.SIMULATION.FILE.DIR, "base_labels.tsv"))
 }
 
 get.data.dir.path <- function(sampling){
@@ -23,9 +23,9 @@ get.generate.data.script <-function(){
   return(GENERATE.DATA.SCRIPT)
 }
 
-generate.original.dataset <- function(){
+generate.original.dataset <- function(rseed){
   # create base data and base labels
-  cmd = paste("python3", get.generate.data.script(), "-rstate", RANDOM.SEED ,"-sd",cluster_sd, nsamples, nfeatures, nclusters, SIMULATION.FILE.DIR)
+  cmd = paste("python3", get.generate.data.script(), "-rstate", rseed ,"-sd",cluster_sd, nsamples, nfeatures, nclusters, MAIN.SIMULATION.FILE.DIR)
   cmd.return = system(cmd, intern = F)
   stopifnot(cmd.return == 0)
 }
@@ -36,7 +36,6 @@ generate.two.gauss.layers <- function(sampling){
   if(!dir.exists(data_dir)){
     dir.create(data_dir)
   }
-  set.seed(RANDOM.SEED)
   FILE.LIST <- list()
   
   #create constant layer
@@ -195,7 +194,6 @@ run.sampling <- function(fnames, name) {
     stopifnot(all(colnames(subtype.raw.data[[1]]) == colnames(subtype.raw.data[[2]])))
     samples <- colnames(subtype.raw.data[[1]])
     for (algorithm.name in ALGORITHM.NAMES) {
-        set.seed(RANDOM.SEED)
         print(paste('data', subtype, 'running algorithm', algorithm.name))
         clustering.path = file.path(get.clustering.results.dir.path(name), paste0(subtype, "_", algorithm.name, ".tsv"))
         timing.path = file.path(get.clustering.results.dir.path(name), paste0(subtype, "_",algorithm.name, '_timing'))
@@ -227,7 +225,7 @@ run.evaluation <- function(results, outfile){
   vals <- c()
   metrics <- c()
   for (r in results){
-     stopifnot(file.exists(r$fname))
+    stopifnot(file.exists(r$fname))
     cmd <- paste(get.sumo.path(), 'evaluate', r$fname, get.base.labels.path())
     cmd.return <- system(cmd, intern=T)
     for (metric in c('ARI', 'NMI','purity')){
@@ -243,14 +241,12 @@ run.evaluation <- function(results, outfile){
   write.table(data, file=outfile, sep = "\t", row.names = F, col.names = T)
 }
 
-prepare.simulation <- function(){
-  for (dir_path in c(SIMULATION.FILE.DIR, get.sumo.files.dir())){
-    if (!dir.exists(dir_path)){
-      dir.create(dir_path)
-    }  
-  }
+prepare.simulation <- function(rseed){
+  if (!dir.exists(MAIN.SIMULATION.FILE.DIR)){
+    dir.create(MAIN.SIMULATION.FILE.DIR)
+  }  
   load.libraries()
-  generate.original.dataset()
+  generate.original.dataset(rseed)
 }
 
 run.simulation <- function(files, sampling_name){
@@ -258,9 +254,6 @@ run.simulation <- function(files, sampling_name){
   if (!dir.exists(dir_name)){
     dir.create(dir_name)
   }  
-  ORG.SUMO.FILES.DIR <- get.sumo.files.dir()
-  SUMO.FILES.DIR <<- file.path(ORG.SUMO.FILES.DIR, sampling_name)
   results <- run.sampling(fnames=files, name=sampling_name)
-  SUMO.FILES.DIR <<- ORG.SUMO.FILES.DIR
   return(results)
 }
