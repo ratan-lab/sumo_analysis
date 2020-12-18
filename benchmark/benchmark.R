@@ -48,6 +48,7 @@ load.libraries <- function() {
   library('SNFtool')
   library('PINSPlus')
   library('LRAcluster')
+  library('iClusterPlus')
   reticulate::use_python(Sys.which('python3'), required = TRUE)
   library('reticulate')
   library("DESeq2")
@@ -55,6 +56,34 @@ load.libraries <- function() {
   system(paste("sh", get.vars.path()))
   #analysis
   library('survival')
+}
+
+run.iCluster <- function(omics.list, subtype.data) {
+  omics.list = log.and.normalize(omics.list, subtype.data, normalize = F)
+  
+  start = Sys.time()
+  subtype = subtype.data$name
+  dev.ratios = c()
+  icluster.rets = list()
+  
+  if (length(omics.list) == 1) {
+    icluster.ret = iClusterPlus::tune.iClusterBayes(cpus=get.mc.cores(), t(omics.list[[1]]), 
+                                                    K=1:(MAX.NUM.CLUSTERS - 1), type=c('gaussian'))$fit
+  } else {
+    icluster.ret = iClusterPlus::tune.iClusterBayes(cpus=get.mc.cores(), t(omics.list[[1]]), 
+                                                    t(omics.list[[2]]), 
+                                                    t(omics.list[[3]]), 
+                                                    K=1:(MAX.NUM.CLUSTERS - 1), type=rep('gaussian', 3))$fit
+  }
+  dev.ratios = lapply(1:(MAX.NUM.CLUSTERS - 1), function(i) icluster.ret[[i]]$dev.ratio)
+  
+  print('dev.ratios are:')
+  print(dev.ratios)
+  
+  optimal.solution = icluster.ret[[which.max(dev.ratios)]]
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=optimal.solution$clusters, 
+              timing=time.taken))
 }
 
 benchmark.omics.num.clusters <- function(benchmark.results, omics='all') {

@@ -12,12 +12,12 @@ MAX.NUM.CLUSTERS <- 15
 DATASETS.PATH = "data"
 RESULTS.DIR.PATH = "results"
 CLINICAL.PARAMS.DIR = "data/clinical"
-MC.CORES <- 25
+MC.CORES <- 20
 VARS.FNAME <- "set_vars.sh"
 RANDOM.SEED <- 42
 
-ALGORITHM.NAMES = c('snf', 'lracluster', 'pins', 'mcca', 'nemo', 'sumo')
-ALGORITHM.DISPLAY.NAMES = as.list(c('SNF', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'SUMO'))
+ALGORITHM.NAMES = c('snf', 'lracluster', 'pins', 'mcca', 'nemo', 'iCluster', 'sumo')
+ALGORITHM.DISPLAY.NAMES = as.list(c('SNF', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'iClusterBayes',  'SUMO'))
 names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
 
 OMIC.SUBSETS = list('multi_omics')
