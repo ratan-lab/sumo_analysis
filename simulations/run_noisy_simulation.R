@@ -12,8 +12,10 @@ MC.CORES <- 4
 SUMO.PATH <- "sumo"
 GENERATE.DATA.SCRIPT <- "generate_data.py"
 VARS.FNAME <- "../benchmark/set_vars.sh"
-ALGORITHM.NAMES = c('snf', 'lracluster', 'pins', 'mcca', 'nemo', 'sumo')
-ALGORITHM.DISPLAY.NAMES = as.list(c('SNF', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'SUMO'))
+#ALGORITHM.NAMES = c('snf', 'lracluster', 'pins', 'mcca', 'nemo', 'iCluster', 'sumo')
+#ALGORITHM.DISPLAY.NAMES = as.list(c('SNF', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'iClusterBayes', 'SUMO'))
+ALGORITHM.NAMES = c('iCluster')
+ALGORITHM.DISPLAY.NAMES = as.list(c('iClusterBayes'))
 names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
 
 # constant layer
@@ -35,11 +37,17 @@ all_results <- list()
 for (rep in 1:repetitions){
   print(paste0("#REP: ", rep))
   SIMULATION.FILE.DIR <- file.path(MAIN.SIMULATION.FILE.DIR, paste(MAIN.SIMULATION.FILE.DIR, rep, sep="_"))
-  dir.create(SIMULATION.FILE.DIR)
+  # dir.create(SIMULATION.FILE.DIR)
   SUMO.FILES.DIR <- file.path(SIMULATION.FILE.DIR, "sumo_files")
-  SIM.FILES <- generate.two.gauss.layers(sampling="double_gauss")
-  results <- run.simulation(SIM.FILES, "double_gauss")
-  all_results <- append(all_results, results)
+  # SIM.FILES <- generate.two.gauss.layers(sampling="double_gauss")
+  # results <- run.simulation(SIM.FILES, "double_gauss")
+  fnames <- dir(file.path(SIMULATION.FILE.DIR, 'double_gauss_results'))
+  fnames <- fnames[grepl('iCluster.tsv', fnames)]
+  for (fname in fnames){
+     tmp <- strsplit(fname, '_')[[1]]
+     results <- list(list(fname=file.path(SIMULATION.FILE.DIR, "double_gauss_results", fname), subtype=paste(tmp[1], tmp[2], tmp[3], sep="_"), algorithm.name="iCluster"))
+     all_results <- append(all_results, results)
+  }
 }
   
-run.evaluation(all_results, outfile=file.path(MAIN.SIMULATION.FILE.DIR, "double_gauss.tsv"))
+run.evaluation(all_results, outfile=file.path(MAIN.SIMULATION.FILE.DIR, "double_gauss_icluster.tsv"))

@@ -30,6 +30,25 @@ generate.original.dataset <- function(rseed){
   stopifnot(cmd.return == 0)
 }
 
+get.two.gauss.layers <- function(sampling){
+  base_data <- read.table(get.base.data.path())
+  data_dir <- get.data.dir.path(sampling)
+  if(!dir.exists(data_dir)){
+    dir.create(data_dir)
+  }
+  FILE.LIST <- list()
+  # constant layer
+  constant_fname <- file.path(data_dir, "constant_layer.tsv")
+  stopifnot(file.exists(constant_fname))
+  # different gauss layers
+  for (i in 1:length(gauss_spl_std)){
+    fname <- file.path(data_dir, paste0("gauss_std_", gauss_spl_std[i],".tsv"))
+    FILE.LIST <- append(FILE.LIST, list(list(layer1=fname, layer2=constant_fname)))
+    stopifnot(file.exists(fname))
+  }
+  return(FILE.LIST)
+}
+
 generate.two.gauss.layers <- function(sampling){
   base_data <- read.table(get.base.data.path())
   data_dir <- get.data.dir.path(sampling)
@@ -129,6 +148,24 @@ run.lracluster <- function(omics.list, subtype) {
   clustering = kmeans(t(solution), num.clusters, iter.max=100, nstart=60)$cluster
   time.taken = as.numeric(Sys.time() - start, units='secs')
   return(list(clustering=clustering, timing=time.taken))
+}
+
+run.iCluster <- function(omics.list, subtype.data) {
+  start = Sys.time()
+  dev.ratios = c()
+  icluster.rets = list()
+  icluster.ret = iClusterPlus::tune.iClusterBayes(cpus=get.mc.cores(), t(omics.list[[1]]), t(omics.list[[2]]), 
+                                                    K=1:(MAX.NUM.CLUSTERS - 1), type=rep('gaussian', 2))$fit
+  
+  dev.ratios = lapply(1:(MAX.NUM.CLUSTERS - 1), function(i) icluster.ret[[i]]$dev.ratio)
+  
+  print('dev.ratios are:')
+  print(dev.ratios)
+  
+  optimal.solution = icluster.ret[[which.max(dev.ratios)]]
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=optimal.solution$clusters, 
+              timing=time.taken))
 }
 
 run.sumo <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
