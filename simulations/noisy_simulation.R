@@ -155,7 +155,7 @@ run.iCluster <- function(omics.list, subtype.data) {
   dev.ratios = c()
   icluster.rets = list()
   icluster.ret = iClusterPlus::tune.iClusterBayes(cpus=get.mc.cores(), t(omics.list[[1]]), t(omics.list[[2]]), 
-                                                    K=1:(MAX.NUM.CLUSTERS - 1), type=rep('gaussian', 2))$fit
+                                                    K=nclusters, type=rep('gaussian', 2))$fit
   
   dev.ratios = lapply(1:(MAX.NUM.CLUSTERS - 1), function(i) icluster.ret[[i]]$dev.ratio)
   
