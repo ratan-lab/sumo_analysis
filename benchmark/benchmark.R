@@ -49,6 +49,7 @@ load.libraries <- function() {
   library('PINSPlus')
   library('LRAcluster')
   library('iClusterPlus')
+  library("CIMLR")
   reticulate::use_python(Sys.which('python3'), required = TRUE)
   library('reticulate')
   library("DESeq2")
@@ -85,6 +86,130 @@ run.iCluster <- function(omics.list, subtype.data) {
   return(list(clustering=optimal.solution$clusters, 
               timing=time.taken))
 }
+
+run.nemo <- function(omics.list, subtype.data, num.clusters=NULL, is.missing.data=F, num.neighbors=NA) {
+  omics.list = log.and.normalize(omics.list, subtype.data)
+  start = Sys.time()
+  clustering = nemo.clustering(omics.list, num.clusters, num.neighbors)
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
+}
+
+run.mcca <- function(omics.list, subtype.data, known.num.clusters=NULL, penalty=NULL, rep.omic=1) {
+  
+  if (length(omics.list) == 1) {
+    return(list(clustering=rep(1, ncol(omics.list[[1]])), timing=1))
+  }
+  omics.list = log.and.normalize(omics.list, subtype.data, 
+                                 normalize = T,
+                                 filter.var = T)
+  start = Sys.time()
+  max.dim = min(MAX.NUM.CLUSTERS, nrow(omics.list[[1]]))
+  
+  subtype = subtype.data$name
+  omics.transposed = lapply(omics.list, t)
+  
+  cca.ret = PMA::MultiCCA(omics.transposed, 
+                          ncomponents = max.dim, penalty=penalty)
+  sample.rep = omics.transposed[[rep.omic]] %*% cca.ret$ws[[rep.omic]]
+  
+  explained.vars = sapply(1:max.dim, 
+                          function(i) sum(unlist(apply(sample.rep[1:i,,drop=F], 2, var))))
+  
+  dimension = get.elbow(explained.vars, is.max=F)
+  print(dimension)
+  sample.rep = sample.rep[,1:dimension]
+  sils = c()
+  clustering.per.num.clusters = list()
+  if (is.null(known.num.clusters)) {
+    for (num.clusters in 2:max.dim) {
+      cur.clustering = kmeans(sample.rep, num.clusters, iter.max=100, nstart=30)$cluster  
+      sil = get.clustering.silhouette(list(t(sample.rep)), cur.clustering)
+      sils = c(sils, sil)
+      clustering.per.num.clusters[[num.clusters - 1]] = cur.clustering
+    }
+    cca.clustering = clustering.per.num.clusters[[which.min(sils)]]
+  } else {
+    cca.clustering = kmeans(sample.rep, known.num.clusters, iter.max=100, nstart=30)$cluster  
+  }
+  
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=cca.clustering, timing=time.taken))
+}
+
+run.snf <- function(omics.list, subtype.data) {
+  omics.list = log.and.normalize(omics.list, subtype.data)
+  start = Sys.time()
+  subtype = subtype.data$name
+  alpha=0.5
+  T.val=30
+  num.neighbors = round(ncol(omics.list[[1]]) / 10)
+  similarity.data = lapply(omics.list, function(x) {affinityMatrix(dist2(as.matrix(t(x)),as.matrix(t(x))), 
+                                                                   num.neighbors, alpha)})
+  if (length(similarity.data) == 1) {
+    W = similarity.data[[1]]
+  } else {
+    W = SNF(similarity.data, num.neighbors, T.val)  
+  }
+  
+  num.clusters = estimateNumberOfClustersGivenGraph(W, 2:MAX.NUM.CLUSTERS)[[3]]  
+  clustering = spectralClustering(W, num.clusters)
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
+}
+
+run.pins <- function(omics.list, subtype.data) {
+  omics.list = log.and.normalize(omics.list, subtype.data, normalize = F)
+  start = Sys.time()
+  subtype = subtype.data$name
+  omics.transposed = lapply(omics.list, t)
+  if (length(omics.list) == 1) {
+    pins.ret = PINSPlus::PerturbationClustering(data=omics.transposed[[1]],
+                                                kMax = MAX.NUM.CLUSTERS)
+    clustering = pins.ret$cluster
+    
+  } else {
+    pins.ret = PINSPlus::SubtypingOmicsData(dataList=omics.transposed,
+                                            kMax = MAX.NUM.CLUSTERS)
+    clustering = pins.ret$cluster2
+  }
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
+}
+
+run.cimlr <- function(omics.list, subtype.data) {
+  cimlr_preprocess <- function(omic, is.seq, max_threshold=10, min_threshold=-10){
+    if (is.seq){
+      omic = log(1+omic)
+      omic = normalize.matrix(omic)
+      # z-score filtering
+      omic[omic > max_threshold] = max_threshold
+      omic[omic < min_threshold] = min_threshold
+      # normalize data to the [0,1] range
+      max_threshold <- max(omic)
+      min_threshold <- min(omic)
+      omic <- (omic - min_threshold + .Machine$double.eps)/(max_threshold - min_threshold + .Machine$double.eps)
+    }
+    return(omic)
+  }
+  
+  omics.list = lapply(omics.list, function(x){cimlr_preprocess(omic=x, is.seq=attr(x, 'is.seq'))})
+  start = Sys.time()
+
+  subtype = subtype.data$name
+  NUMC = 2:MAX.NUM.CLUSTERS
+  cores.ratio = ifelse(MC.CORES / detectCores() <= 1, MC.CORES / detectCores(), 1)
+  estimate_k <- CIMLR_Estimate_Number_of_Clusters(omics.list, NUMC = NUMC, cores.ratio = cores.ratio)
+  print(paste0("Best number of clusters, K1 heuristic: ",NUMC[which.min(estimate_k$K1)],", K2 heuristic: ",NUMC[which.min(estimate_k$K2)]))
+  num.clusters <- NUMC[which.min(estimate_k$K1)]
+  
+  res <- CIMLR(omics.list, c=num.clusters, cores.ratio = cores.ratio)
+  clustering <- res$y$cluster
+
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
+}
+
 
 benchmark.omics.num.clusters <- function(benchmark.results, omics='all') {
   num.clusters = matrix(1, ncol=length(SUBTYPES.DATA), nrow=length(ALGORITHM.NAMES))

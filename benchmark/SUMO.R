@@ -69,7 +69,7 @@ sumo.prepare <- function(omics.list, subtype.data, prepare_files, outfile){
 }
 
 run.sumo <- function(omics.list, subtype.data, num.clusters=NULL, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
-  start = Sys.time()
+  # preprocess data
   if (!dir.exists(file_dir)){
     dir.create(file_dir)
   }
@@ -84,7 +84,8 @@ run.sumo <- function(omics.list, subtype.data, num.clusters=NULL, mc.cores=get.m
     }
     prepare_files <- c(prepare_files, fname)
   }
-  
+  #run sumo prepare
+  start = Sys.time()
   outfile = file.path(file_dir, paste0("prepared.", subtype.data$name, ".npz"))
   sumo.prepare(omics.list, subtype.data, prepare_files, outfile=outfile)
   stopifnot(file.exists(outfile))
@@ -92,7 +93,7 @@ run.sumo <- function(omics.list, subtype.data, num.clusters=NULL, mc.cores=get.m
   if(is.null(num.clusters)){
     num.clusters=paste(2,MAX.NUM.CLUSTERS, sep=",")
   }
-  
+  # run sumo run
   outdir = file.path(file_dir, subtype.data$name)
   clustering = sumo.clustering(num.clusters, outfile, outdir, mc.cores)
   time.taken = as.numeric(Sys.time() - start, units='secs')

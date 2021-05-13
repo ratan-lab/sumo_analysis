@@ -12,18 +12,18 @@ MAX.NUM.CLUSTERS <- 15
 DATASETS.PATH = "data"
 RESULTS.DIR.PATH = "results"
 CLINICAL.PARAMS.DIR = "data/clinical"
-MC.CORES <- 20
+MC.CORES <- 1
 VARS.FNAME <- "set_vars.sh"
 RANDOM.SEED <- 42
 
-ALGORITHM.NAMES = c('snf', 'lracluster', 'pins', 'mcca', 'nemo', 'iCluster', 'sumo')
-ALGORITHM.DISPLAY.NAMES = as.list(c('SNF', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'iClusterBayes',  'SUMO'))
+ALGORITHM.NAMES = c('snf', 'lracluster', 'pins', 'mcca', 'nemo', 'iCluster', 'sumo', 'cimlr')
+ALGORITHM.DISPLAY.NAMES = as.list(c('SNF', 'LRAcluster', 'PINS', 'MCCA', 'NEMO', 'iClusterBayes', 'SUMO', 'CIMLR'))
 names(ALGORITHM.DISPLAY.NAMES) = ALGORITHM.NAMES
 
 OMIC.SUBSETS = list('multi_omics')
 names(OMIC.SUBSETS) = c('all')
 
-# run all tools
+# run other tools
 load.libraries()
 run.benchmark()
   
@@ -36,5 +36,7 @@ if ('sumo' %in% ALGORITHM.NAMES){
 }
   
 # calculate empirical survival and enriched clinical labels
+MC.CORES <- 20
 results <- analyze.benchmark()
 perform.all.analyses(results)
+print("DONE!")

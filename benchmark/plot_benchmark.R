@@ -6,7 +6,7 @@ library(grid)
 library(ggpubr)
 
 get.tables.dir.path <- function(){
-  return("tables")
+  return("../../sumo_analysis_legacy/benchmark/results/tables")
 }
 
 clin <- read_csv(file.path(get.tables.dir.path(), "clinical_multi_omics.csv"))
@@ -25,7 +25,7 @@ sumo_data <- sumo_surv %>% full_join(sumo_clin) %>% filter(k != "")
 sumo_data
 
 cancers <- c("AML", "BIC", "COAD", "GBM", "KIRC", "LIHC", "LUSC", "SKCM", "OV", "SARC")
-selected <- c(12, 13, 7, 10, 6, 2, 9, 7, 9, 6)
+selected <- c(11, 2, 3, 12, 6, 7, 12, 2, 3, 5)
 selected_sumo <- sumo_data %>% inner_join(tibble(k=as.character(selected), cancer=cancers)) %>% mutate(tool="SUMO")
 selected_sumo
 
@@ -39,25 +39,28 @@ data %>% filter(tool == "iClusterBayes")
 data <- read_tsv("benchmark_results_selected_0.2.5.tsv")
 data <- data %>% mutate(tool = as.factor(tool), is_sumo = as.logical(is_sumo))
 data$tool <- factor(data$tool, levels = c("NEMO", "SUMO","LRAcluster", "MCCA", 
-                                          "PINSPlus", "SNF", "iClusterBayes"))
+                                          "PINSPlus", "SNF", "iClusterBayes", "CIMLR"))
 
 data %>% mutate(sig_surv = survival >= -log10(0.05), sig_clin = clin > 0) %>% filter(sig_surv == TRUE | sig_clin == TRUE) %>%
   group_by(tool) %>% summarise(clinical=sum(sig_clin), survival=sum(sig_surv)) %>%
   select(tool, survival, clinical)
 stats <- .Last.value
-stats <- tibble(tool=c('LRAcluster', 'MCCA', 'NEMO', 'PINSPlus', 'SNF', 'iClusterBayes', 'SUMO')) %>%
+stats <- tibble(tool=c('LRAcluster', 'MCCA', 'NEMO', 'PINSPlus', 'SNF', 'iClusterBayes', 'CIMLR', 'SUMO')) %>%
   mutate(tool=as.factor(tool)) %>%
   left_join(stats)
 
 colnames(stats) <- c("Method", "Number of cancers\n with differential survival", "Number of cancers\n with clinical enrichment")
 
 tt <- ttheme_default(core=list(
-  fg_params=list(fontface=c(rep("plain", 6), "bold")),
-  bg_params = list(fill=c("grey95", "grey90","grey95", "grey90","grey95", "grey90","grey60"),
+  fg_params=list(fontface=c(rep("plain", 7), "bold")),
+  bg_params = list(fill=c("grey95", "grey90","grey95", "grey90","grey95", "grey90","grey95","grey60"),
                    alpha = rep(c(1,0.5), each=6))
 ), base_size = 10.5)
 
 figB <- tableGrob(stats, rows=NULL, theme=tt)
+
+tool_pal <- pal_npg("nrc")(10)[c(1:7,10)]
+names(tool_pal) <- c("NEMO", "SUMO","LRAcluster", "MCCA", "PINSPlus", "SNF", "iClusterBayes", "CIMLR")
 
 ggplot(data, aes(survival, clin, color=tool, shape=is_sumo)) + 
   geom_point(size=3) + 
@@ -73,10 +76,10 @@ ggplot(data, aes(survival, clin, color=tool, shape=is_sumo)) +
         legend.direction = "horizontal",
         panel.grid.minor.y = element_blank()) +
   guides(shape=FALSE, 
-         color=guide_legend(override.aes = list(shape=c(16,17,16,16,16,16,16), size=3), nrow=3, byrow = TRUE)) +
+         color=guide_legend(override.aes = list(shape=c(16,17,16,16,16,16,16,16), size=3), nrow=3, byrow = TRUE)) +
   labs(color="", shape="") +
-  scale_color_npg() 
-
+  scale_color_manual(values=tool_pal)
+  
 figA <- last_plot()
 
 cairo_pdf("benchmark_results.pdf", width=7, height=7.5)
