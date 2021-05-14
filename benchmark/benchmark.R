@@ -53,6 +53,7 @@ load.libraries <- function() {
   reticulate::use_python(Sys.which('python3'), required = TRUE)
   library('reticulate')
   library("DESeq2")
+  library('cluster')
   stopifnot(file.exists(get.vars.path()))
   system(paste("sh", get.vars.path()))
   #analysis

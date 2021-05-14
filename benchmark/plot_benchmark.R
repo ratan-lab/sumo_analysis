@@ -6,7 +6,7 @@ library(grid)
 library(ggpubr)
 
 get.tables.dir.path <- function(){
-  return("../../sumo_analysis_legacy/benchmark/results/tables")
+  return("results/tables")
 }
 
 clin <- read_csv(file.path(get.tables.dir.path(), "clinical_multi_omics.csv"))
