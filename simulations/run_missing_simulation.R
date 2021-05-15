@@ -53,4 +53,4 @@ for (rep in 1:repetitions){
 }
 
 SIMULATION.FILE.DIR <- "missing"
-run.evaluation(all_results, outfile=file.path("missing","missing.tsv"))
+run.evaluation(all_results, outfile=file.path(SIMULATION.FILE.DIR,"missing.tsv"))
