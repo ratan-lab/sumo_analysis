@@ -86,8 +86,8 @@ get.raw.data <-function(data){
 }
 
 run.snf <- function(omics.list, subtype) {
-  start = Sys.time()
   omics.list = lapply(omics.list, normalize.matrix)  
+  start = Sys.time()
   alpha=0.5
   T.val=30
   num.neighbors = round(ncol(omics.list[[1]]) / 10)
@@ -110,8 +110,8 @@ run.pins <- function(omics.list, subtype) {
 }
 
 run.mcca <- function(omics.list, subtype, known.num.clusters=nclusters, penalty=NULL, rep.omic=1) {# 2D noisy simulation
-  start = Sys.time()
   omics.list = lapply(omics.list, normalize.matrix)  
+  start = Sys.time()
   max.dim = min(nlayers, nrow(omics.list[[1]]))
   omics.transposed = lapply(omics.list, t)
   cca.ret = PMA::MultiCCA(omics.transposed, type="ordered", ncomponents = 1, penalty=penalty) #type="standard", ncomponents = max.dim
@@ -122,8 +122,8 @@ run.mcca <- function(omics.list, subtype, known.num.clusters=nclusters, penalty=
 }
 
 run.nemo <- function(omics.list, subtype.data, num.clusters=nclusters, is.missing.data=F, num.neighbors=NA) {# 2D noisy simulation
-  start = Sys.time()
   omics.list = lapply(omics.list, normalize.matrix)  
+  start = Sys.time()
   clustering = nemo.clustering(omics.list, num.clusters, num.neighbors)
   time.taken = as.numeric(Sys.time() - start, units='secs')
   return(list(clustering=clustering, timing=time.taken))
@@ -157,7 +157,7 @@ run.iCluster <- function(omics.list, subtype.data) {
   icluster.ret = iClusterPlus::tune.iClusterBayes(cpus=get.mc.cores(), t(omics.list[[1]]), t(omics.list[[2]]), 
                                                     K=nclusters, type=rep('gaussian', 2))$fit
   
-  dev.ratios = lapply(1:(MAX.NUM.CLUSTERS - 1), function(i) icluster.ret[[i]]$dev.ratio)
+  dev.ratios = icluster.ret[[1]]$dev.ratio
   
   print('dev.ratios are:')
   print(dev.ratios)
@@ -168,8 +168,31 @@ run.iCluster <- function(omics.list, subtype.data) {
               timing=time.taken))
 }
 
-run.sumo <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
+run.cimlr <- function(omics.list, subtype.data) {
+  cimlr_preprocess <- function(omic, max_threshold=10, min_threshold=-10){
+      omic = normalize.matrix(omic)
+      # z-score filtering
+      omic[omic > max_threshold] = max_threshold
+      omic[omic < min_threshold] = min_threshold
+      # normalize data to the [0,1] range
+      max_threshold <- max(omic)
+      min_threshold <- min(omic)
+      omic <- (omic - min_threshold + .Machine$double.eps)/(max_threshold - min_threshold + .Machine$double.eps)
+    return(omic)
+  }
+  
+  omics.list = lapply(omics.list, function(x){cimlr_preprocess(omic=x)})
   start = Sys.time()
+  
+  cores.ratio = ifelse(MC.CORES / detectCores() <= 1, MC.CORES / detectCores(), 1)
+  res <- CIMLR(omics.list, c=nclusters, cores.ratio = cores.ratio)
+  clustering <- res$y$cluster
+  
+  time.taken = as.numeric(Sys.time() - start, units='secs')
+  return(list(clustering=clustering, timing=time.taken))
+}
+
+run.sumo <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.mc.cores(), file_dir= get.sumo.files.dir()){
   if (!dir.exists(file_dir)){
     dir.create(file_dir)
   }
@@ -177,23 +200,15 @@ run.sumo <- function(omics.list, subtype, num.clusters=nclusters, mc.cores=get.m
   sampling <- strsplit(subtype, "_")[[1]][1]
   
   for (i in 1:length(omics.list)){
-    if (attr(omics.list[[i]], "name") == sampling){
-      fname <- file.path(get.sumo.files.dir(), paste0(subtype, "_std.tsv"))
+    fname <- paste0(strsplit(attr(omics.list[[i]], "fname"), "\\.tsv")[[1]][1], "_std.tsv" )
+    if (!file.exists(fname)){
       omic <- t(scale(t(as.matrix(omics.list[[i]]))))
       omics.list[[i]] <- omic
       write.table(omic, fname, sep="\t", row.names = T, col.names = T)
-      prepare_files <- c(prepare_files, fname)
-    } else {
-      fname <- paste0(strsplit(attr(omics.list[[i]], "fname"), "\\.")[[1]][1], "_std.tsv" )
-      if (!file.exists(fname)){
-        omic <- t(scale(t(as.matrix(omics.list[[i]]))))
-        omics.list[[i]] <- omic
-        write.table(omic, fname, sep="\t", row.names = T, col.names = T)
-      }
-      prepare_files <- c(prepare_files, fname)
     }
+    prepare_files <- c(prepare_files, fname)
   }
-  
+  start = Sys.time()
   outfile = file.path(file_dir, paste0("prepared.", subtype, ".npz"))
   sumo.prepare(omics.list, subtype.data, prepare_files, outfile=outfile)
   stopifnot(file.exists(outfile))
@@ -248,8 +263,11 @@ run.sampling <- function(fnames, name) {
             # assume the same sample order
             write.table(data.frame(sample=samples, label=clustering), file=clustering.path, sep="\t", row.names = F, col.names = T)
           }
-          result_files <- append(result_files, list(list(fname=clustering.path, subtype=subtype, algorithm=algorithm.name)))
+        } else {
+          print("Fetching existing result file!")
         }
+        stopifnot(file.exists(clustering.path))
+        result_files <- append(result_files, list(list(fname=clustering.path, subtype=subtype, algorithm=algorithm.name)))
     }
   }
   return(result_files)
