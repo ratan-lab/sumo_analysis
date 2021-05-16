@@ -165,13 +165,13 @@ run.pins <- function(omics.list, subtype.data) {
   subtype = subtype.data$name
   omics.transposed = lapply(omics.list, t)
   if (length(omics.list) == 1) {
-    pins.ret = PINSPlus::PerturbationClustering(data=omics.transposed[[1]],
-                                                kMax = MAX.NUM.CLUSTERS)
+    pins.ret = PINSPlus::PerturbationClustering(data=omics.transposed[[1]], kMax = MAX.NUM.CLUSTERS,
+                                                ncore = get.mc.cores())
     clustering = pins.ret$cluster
     
   } else {
-    pins.ret = PINSPlus::SubtypingOmicsData(dataList=omics.transposed,
-                                            kMax = MAX.NUM.CLUSTERS)
+    pins.ret = PINSPlus::SubtypingOmicsData(dataList=omics.transposed, kMax = MAX.NUM.CLUSTERS,
+                                            ncore = get.mc.cores())
     clustering = pins.ret$cluster2
   }
   time.taken = as.numeric(Sys.time() - start, units='secs')

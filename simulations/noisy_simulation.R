@@ -101,10 +101,12 @@ run.snf <- function(omics.list, subtype) {
 }
 
 run.pins <- function(omics.list, subtype) {
-  start = Sys.time()
+  omics.list = lapply(omics.list, normalize.matrix)
   omics.transposed = lapply(omics.list, t)
-  pins.ret = PINSPlus::SubtypingOmicsData(dataList=omics.transposed, kMax = nlayers)
+  start = Sys.time()
+  pins.ret = PINSPlus::SubtypingOmicsData(dataList=omics.transposed, k=nlayers, ncore=get.mc.cores())
   clustering = pins.ret$cluster1
+  
   time.taken = as.numeric(Sys.time() - start, units='secs')
   return(list(clustering=clustering, timing=time.taken))
 }
@@ -299,8 +301,7 @@ run.evaluation <- function(results, outfile){
 prepare.simulation <- function(rseed){
   if (!dir.exists(MAIN.SIMULATION.FILE.DIR)){
     dir.create(MAIN.SIMULATION.FILE.DIR)
-  }  
-  load.libraries()
+  } 
   generate.original.dataset(rseed)
 }
 

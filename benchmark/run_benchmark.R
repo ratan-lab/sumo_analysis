@@ -12,7 +12,7 @@ MAX.NUM.CLUSTERS <- 15
 DATASETS.PATH = "data"
 RESULTS.DIR.PATH = "results"
 CLINICAL.PARAMS.DIR = "data/clinical"
-MC.CORES <- 1
+MC.CORES <- 20
 VARS.FNAME <- "set_vars.sh"
 RANDOM.SEED <- 42
 
@@ -36,7 +36,7 @@ if ('sumo' %in% ALGORITHM.NAMES){
 }
   
 # calculate empirical survival and enriched clinical labels
-MC.CORES <- 20
 results <- analyze.benchmark()
+save(results, file.path(RESULTS.DIR.PATH, "benchmark_results_list.RData"))
 perform.all.analyses(results)
 print("DONE!")

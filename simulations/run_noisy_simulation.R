@@ -8,7 +8,7 @@ nlayers = 2
 cluster_sd = 0.5
 
 # benchmark params
-MC.CORES <- 15
+MC.CORES <- 10
 SUMO.PATH <- "sumo"
 GENERATE.DATA.SCRIPT <- "generate_data.py"
 VARS.FNAME <- "../benchmark/set_vars.sh"
@@ -28,6 +28,7 @@ repetitions = 100
 
 # prepare simulation
 MAIN.SIMULATION.FILE.DIR <- "noisy"
+load.libraries()
 prepare.simulation(RANDOM.SEED)
 
 # run simulation
@@ -41,10 +42,11 @@ for (rep in 1:repetitions){
     dir.create(SIMULATION.FILE.DIR)
   }
   SUMO.FILES.DIR <- file.path(SIMULATION.FILE.DIR, "sumo_files")
-  # SIM.FILES <- generate.two.gauss.layers(sampling="double_gauss")
-  SIM.FILES <- get.two.gauss.layers(sampling="double_gauss") # use when re-running the simulation on existing files
+  SIM.FILES <- generate.two.gauss.layers(sampling="double_gauss")
+  # SIM.FILES <- get.two.gauss.layers(sampling="double_gauss") # use when re-running the simulation on existing files
   results <- run.simulation(SIM.FILES, "double_gauss")
   all_results <- append(all_results, results)
 }
 
 run.evaluation(all_results, outfile=file.path(MAIN.SIMULATION.FILE.DIR, "double_gauss.tsv"))
+print("DONE!")
