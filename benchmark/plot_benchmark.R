@@ -25,7 +25,9 @@ sumo_data <- sumo_surv %>% full_join(sumo_clin) %>% filter(k != "")
 sumo_data
 
 cancers <- c("AML", "BIC", "COAD", "GBM", "KIRC", "LIHC", "LUSC", "SKCM", "OV", "SARC")
-selected <- c(11, 2, 3, 12, 6, 7, 12, 2, 3, 5)
+# selected <- c(11, 2, 3, 12, 6, 7, 12, 2, 3, 5)
+selected <- c(11, 9, 2, 13, 2, 10, 12, 14, 7, 6)
+
 selected_sumo <- sumo_data %>% inner_join(tibble(k=as.character(selected), cancer=cancers)) %>% mutate(tool="SUMO")
 selected_sumo
 
@@ -33,10 +35,8 @@ clin_data <- all_clin %>% filter(is_sumo == FALSE)
 surv_data <- all_surv %>% filter(is_sumo == FALSE)
 
 data <- clin_data %>% full_join(surv_data) %>% full_join(selected_sumo %>% select(-k))
-data %>% filter(tool == "iClusterBayes")
 
-###
-data <- read_tsv("benchmark_results_selected_0.2.5.tsv")
+data[data$tool == "PINS",]$tool = "PINSPlus"
 data <- data %>% mutate(tool = as.factor(tool), is_sumo = as.logical(is_sumo))
 data$tool <- factor(data$tool, levels = c("NEMO", "SUMO","LRAcluster", "MCCA", 
                                           "PINSPlus", "SNF", "iClusterBayes", "CIMLR"))
@@ -82,6 +82,6 @@ ggplot(data, aes(survival, clin, color=tool, shape=is_sumo)) +
   
 figA <- last_plot()
 
-cairo_pdf("benchmark_results.pdf", width=7, height=7.5)
+cairo_pdf("benchmark_results.pdf", width=7, height=8.5)
 ggarrange(figA, figB, labels = c('A','B'), ncol=1, heights = c(2,1))
 dev.off()

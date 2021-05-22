@@ -10,7 +10,7 @@ SUMO.PATH <- "sumo"
 DATASETS.PATH = "data"
 RESULTS.DIR.PATH.MAIN = "results_eval"
 CLINICAL.PARAMS.DIR = "data/clinical"
-MC.CORES <- 25
+MC.CORES <- 20
 VARS.FNAME <- "set_vars.sh"
 RANDOM.SEED <- 42
 OMIC.SUBSETS = list('multi_omics')

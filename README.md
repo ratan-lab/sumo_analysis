@@ -29,17 +29,25 @@ install.packages('LRAcluster_1.0.tgz', repos = NULL, type="source")
 install.packages('SNFtool_2.0.3.tar.gz', repos = NULL, type="source")
 ```
 
-## Multi-omic benchmark
+### Comparing tool performance on various cancer datasets
+
+All the scripts should be run from the *sumo_analysis/benchmark* directory.
 
 1. Download benchmark data from http://acgt.cs.tau.ac.il/multi_omic_benchmark/download.html. 
 2. Extract all .zip files into the *sumo_analysis/benchmark/data* directory.
-3. From *sumo_analysis/benchmark* directory run **run_benchmark.R** script.
+3. Run **run_benchmark.R** script to compare tool performance.
 4. To create Fig2 run **plot_benchmark.R** script.
+5. Run **create_supp_table.R** script to create summary table (Supplementary Table S2).
 
-## Benchmark evaluation
+### Stability of benchmark results
 
+1. From *sumo_analysis/benchmark* directory run **run_benchmark_eval.R** script.
+2. To create FigS4 run **plot_benchmark_eval.R** script.
 
-## Noisy simulation
+### Comparing tool performance on simulated datasets
 
+All the scripts should be run from the *sumo_analysis/simulations* directory. 
 
-## Subsampling simulation
+1. Run **run_noisy_simulation.R** script to compare tool performance on datasets with various level of noise.
+2. Run **run_missing_simulation.R** script to compare tool performance on incomplete datasets (containing missing data).
+3. To create Fig1 and FigS2 run **plot_simulations.R** script.
