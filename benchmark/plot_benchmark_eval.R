@@ -1,6 +1,7 @@
 library(tidyverse)
 library(ggsci)
 library(mclust)
+library(ggpubr)
 
 get.tables.dir.path <-function(){
   return(file.path("results_eval", paste0('results_', REP,'/tables')))
@@ -85,7 +86,7 @@ ARI_data$tool %>% unique()
 ARI_data %>%
   ggplot() + geom_point(aes(x=tool, color=tool, y=medianARI), size=2) +
   geom_errorbar(aes(x = tool, ymin=medianARI-sdARI, ymax=medianARI+sdARI, color=tool), size=1, width=0.4) + 
-  geom_text(aes(x=tool, y=c(0.78, 0.9, 0.85, 0.9, 0.56, 0.88, 0.76, 0.88), label=tool)) +
+  geom_text(aes(x=tool, y=c(0.8, 0.9, 0.87, 0.88, 0.4, 0.85, 0.74, 0.88), label=tool)) +
   scale_color_manual(values=tool_pal) +
   theme_bw() + 
   theme(legend.position = "null", axis.text = element_text(size=12),
