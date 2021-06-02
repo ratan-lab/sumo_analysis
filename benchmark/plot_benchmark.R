@@ -25,8 +25,7 @@ sumo_data <- sumo_surv %>% full_join(sumo_clin) %>% filter(k != "")
 sumo_data
 
 cancers <- c("AML", "BIC", "COAD", "GBM", "KIRC", "LIHC", "LUSC", "SKCM", "OV", "SARC")
-# selected <- c(11, 2, 3, 12, 6, 7, 12, 2, 3, 5)
-selected <- c(11, 9, 2, 13, 2, 10, 12, 14, 7, 6)
+selected <- c(11, 2, 2, 12, 6, 10, 12, 11, 3, 6) 
 
 selected_sumo <- sumo_data %>% inner_join(tibble(k=as.character(selected), cancer=cancers)) %>% mutate(tool="SUMO")
 selected_sumo
@@ -82,6 +81,7 @@ ggplot(data, aes(survival, clin, color=tool, shape=is_sumo)) +
   
 figA <- last_plot()
 
-cairo_pdf("benchmark_results.pdf", width=7, height=8.5)
+pdf("benchmark_results.pdf", width=7, height=8.5)
 ggarrange(figA, figB, labels = c('A','B'), ncol=1, heights = c(2,1))
 dev.off()
+  

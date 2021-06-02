@@ -63,9 +63,10 @@ cairo_pdf("figureS2.pdf", width=8, height=5.5)
     geom_line(aes(x=var,y=medianARI, group=tool, color=tool), size=1) + 
     geom_point(aes(x=var,y=medianARI, group=tool, color=tool), size=1) + 
     facet_wrap(tool~., ncol=4) +
+    guides(colour = guide_legend(nrow = 1)) +
     theme_bw() + ylab("median ARI") + xlab("standard deviation") + 
-    theme(legend.position=c(0.85,0.25), 
-          legend.direction = "vertical", 
+    theme(legend.position="bottom", 
+          legend.direction = "horizontal", 
           panel.grid.minor.y = element_blank(), 
           legend.title = element_blank(), text = element_text(size=12)) +
     scale_color_manual(values=tool_pal_color) + scale_fill_manual(values=tool_pal_fill) + ylim(0,1)

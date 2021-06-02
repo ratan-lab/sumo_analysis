@@ -33,7 +33,7 @@ data <- all_surv %>% full_join(all_clin, by = c("tool", "cancer"))
 
 SUMO_k <- 12
 data_other <- data %>% filter(!grepl("SUMO", tool))
-data <- data %>% 
+data <- data %>%
   filter(tool == paste0("SUMO", SUMO_k)) %>%
   mutate(tool = "SUMO") %>%
   full_join(data_other,  by = c("tool", "cancer", "survival", "clin"))
@@ -92,7 +92,7 @@ ARI_data %>%
   theme(legend.position = "null", axis.text = element_text(size=12),
         strip.text.x = element_text(size = 12, face="bold"), axis.title = element_text(size=12), 
         legend.text=element_text(size=12), axis.text.y = element_blank(), axis.ticks.y = element_blank()) +
-  labs(x="",y="median pairwise ARI") +
+  labs(x="",y="pairwise ARI") +
   coord_flip()
 stability <- last_plot()
 
