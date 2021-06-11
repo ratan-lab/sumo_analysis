@@ -18,6 +18,7 @@ install.packages(c('PMA', 'PINSPlus', 'R.matlab', 'devtools', 'Matrix', 'rticula
 
 library("devtools")
 install_github("danro9685/CIMLR", ref = 'R')
+install_github("saezlab/progeny")
 
 if (!requireNamespace("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
