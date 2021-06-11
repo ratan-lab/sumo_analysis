@@ -36,6 +36,7 @@ All the scripts should be run from the *sumo_analysis/benchmark* directory.
 1. Download benchmark data from http://acgt.cs.tau.ac.il/multi_omic_benchmark/download.html. 
 2. Extract all .zip files into the *sumo_analysis/benchmark/data* directory.
 3. Run **run_benchmark.R** script to compare tool performance.
+4. Run **test_pathways.R** to compare pathway activity between found clusters (script generates benchmark_pathway_activity.tsv).
 4. To create Fig2 run **plot_benchmark.R** script.
 5. Run **create_supp_table.R** script to create summary table (Supplementary Table S2).
 

@@ -6,16 +6,22 @@ library(tidyverse)
 surv_table <- read_csv("results/tables/survival_multi_omics.csv") %>% mutate(tool = X1) %>% select(-X1) %>% gather(cancer, surv_pval, -tool)
 surv_table[surv_table$tool == "PINS",]$tool <- "PINSPlus"
 surv_table_other <- surv_table %>% filter(!grepl("SUMO", tool))
-# check clinincal
+# check clinical
 clin_table <- read_csv("results/tables/clinical_multi_omics.csv") %>% mutate(tool = X1) %>% select(-X1) %>% gather(cancer, clin_params, -tool)
 clin_table[clin_table$tool == "PINS",]$tool <- "PINSPlus"
 clin_table_other <- clin_table %>% filter(!grepl("SUMO", tool))
+# check runtime
+time_table <- read_csv("results/tables/runtime_multi_omics.csv") %>% mutate(tool = X1) %>% select(-X1) %>% gather(cancer, runtime, -tool)
+time_table[time_table$tool == "PINS",]$tool <- "PINSPlus"
+time_table_other <- time_table %>% filter(!grepl("SUMO", tool))
 
 # SUMO 
-# check survival & clinical 
+# check survival, clinical & runtime
 surv_table_sumo <- surv_table %>% filter(grepl("SUMO", tool)) %>% separate(tool, c('tmp', 'k'), sep="SUMO") %>% 
   select(-tmp) %>% filter(k != "") %>% mutate(tool = "SUMO", k= as.numeric(k))
 clin_table_sumo <- clin_table %>% filter(grepl("SUMO", tool)) %>% separate(tool, c('tmp', 'k'), sep="SUMO") %>% 
+  select(-tmp) %>% filter(k != "") %>% mutate(tool = "SUMO", k= as.numeric(k))
+time_table_sumo <- time_table %>% filter(grepl("SUMO", tool)) %>% separate(tool, c('tmp', 'k'), sep="SUMO") %>% 
   select(-tmp) %>% filter(k != "") %>% mutate(tool = "SUMO", k= as.numeric(k))
 
 cancers <- c("AML", "BIC", "COAD", "GBM", "KIRC", "LIHC", "LUSC", "SKCM", "OV", "SARC")
@@ -24,10 +30,13 @@ surv_table_sumo <- tibble(cancer=cancers, k=selected) %>% left_join(surv_table_s
   select(tool, cancer, surv_pval)
 clin_table_sumo <- tibble(cancer=cancers, k=selected) %>% left_join(clin_table_sumo, by = c("cancer", "k")) %>% 
   select(tool, cancer, clin_params)
+time_table_sumo <- tibble(cancer=cancers, k=selected) %>% left_join(time_table_sumo, by = c("cancer", "k")) %>% 
+  select(tool, cancer, runtime)
 
 ###
 surv_table_final <- surv_table_sumo %>% full_join(surv_table_other, by = c("tool", "cancer", "surv_pval"))
 clin_table_final <- clin_table_sumo %>% full_join(clin_table_other, by = c("tool", "cancer", "clin_params"))
+time_table_final <- time_table_sumo %>% full_join(time_table_other, by = c("tool", "cancer", "runtime"))
 
 #num clusters
 nclus_table <- read_csv("results/tables/num_cluster_multi_omics.csv") %>% mutate(tool = X1) %>% select(-X1) %>% gather(cancer, k, -tool)
@@ -93,6 +102,6 @@ clins_summary %>% select(cancer, tool, sum_clin_params)  %>% left_join(res_table
   filter(sum_clin_params != clin_params) #-> no diff
 
 res_table <- res_table %>% left_join(clins_summary %>% select(-sum_clin_params, -tested_params), by = c("tool", "cancer"))
-res_table
-write_tsv(res_table, "benchmark_results_selected_0.2.6.tsv")
+res_table <- res_table %>% left_join(time_table_final, by=c('tool', 'cancer'))
 
+write_tsv(res_table %>% arrange(cancer, tool), "benchmark_results_selected_0.2.6.tsv")

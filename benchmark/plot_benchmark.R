@@ -11,6 +11,16 @@ get.tables.dir.path <- function(){
 
 clin <- read_csv(file.path(get.tables.dir.path(), "clinical_multi_omics.csv"))
 surv <- read_csv(file.path(get.tables.dir.path(), "survival_multi_omics.csv"))
+pathways <- read_tsv("benchmark_pathway_activity.tsv") %>% select(-total)
+pathways %>% 
+  gather(pathway, pval, -tool,-cancer) %>%
+  filter(pval <= 0.05) %>%
+  group_by(tool, cancer) %>%
+  summarise(n=n()) %>%
+  filter(n >0) %>%
+  group_by(tool) %>%
+  summarise(n=n())
+pathway_stats <- .Last.value
 
 all_surv <- surv %>% mutate(tool=X1) %>% select(-X1) %>% gather(cancer, survival, -tool)
 all_clin <- clin %>% mutate(tool=X1) %>% select(-X1) %>% gather(cancer, clin, -tool)
@@ -42,13 +52,14 @@ data$tool <- factor(data$tool, levels = c("NEMO", "SUMO","LRAcluster", "MCCA",
 
 data %>% mutate(sig_surv = survival >= -log10(0.05), sig_clin = clin > 0) %>% filter(sig_surv == TRUE | sig_clin == TRUE) %>%
   group_by(tool) %>% summarise(clinical=sum(sig_clin), survival=sum(sig_surv)) %>%
-  select(tool, survival, clinical)
+  select(tool, survival, clinical) %>% left_join(pathway_stats) 
 stats <- .Last.value
 stats <- tibble(tool=c('LRAcluster', 'MCCA', 'NEMO', 'PINSPlus', 'SNF', 'iClusterBayes', 'CIMLR', 'SUMO')) %>%
   mutate(tool=as.factor(tool)) %>%
   left_join(stats)
 
-colnames(stats) <- c("Method", "Number of cancers\n with differential survival", "Number of cancers\n with clinical enrichment")
+colnames(stats) <- c("Method", "Number of cancers\nwith differential survival", "Number of cancers\nwith clinical enrichment",
+                     "Number of cancers\nwith pathway activity\nenrichment")
 
 tt <- ttheme_default(core=list(
   fg_params=list(fontface=c(rep("plain", 7), "bold")),
@@ -81,7 +92,7 @@ ggplot(data, aes(survival, clin, color=tool, shape=is_sumo)) +
   
 figA <- last_plot()
 
-pdf("benchmark_results.pdf", width=7, height=8.5)
+pdf("benchmark_results.pdf", width=7, height=9)
 ggarrange(figA, figB, labels = c('A','B'), ncol=1, heights = c(2,1))
 dev.off()
   
